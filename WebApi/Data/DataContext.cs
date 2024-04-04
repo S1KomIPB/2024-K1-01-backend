@@ -13,6 +13,7 @@ namespace WebApi.Data
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseType> CourseTypes { get; set; }
         public DbSet<CourseClass> CourseClasses { get; set; }
+        public DbSet<Semester> Semesters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,16 +36,9 @@ namespace WebApi.Data
                 .WithOne(cc => cc.CourseTypes)
                 .HasForeignKey(cc => cc.CourseTypeId);
 
-            base.OnModelCreating(modelBuilder);
-        }
+            modelBuilder.Entity<Semester>()
+                .HasKey(x => x.Id);
 
-        public DbSet<Semester> Semesters { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Semester>(entity =>{
-                entity.HasKey(x => x.Id);
-            });
             base.OnModelCreating(modelBuilder);
         }
     }

@@ -29,22 +29,22 @@ namespace WebApi.Controllers
 
                 var newCourse = new Course
                 {
-                    SemesterId = request.SemesterId,
-                    Name = request.Name,
-                    Code = request.Code,
-                    Semesters = (Course.SemesterEnum)request.Semesters,
-                    CourseTypes = request.CourseType.Select(ct => new CourseType
+                    SemesterId = request.semester_id,
+                    Name = request.name,
+                    Code = request.code,
+                    Semesters = (Course.SemesterEnum)request.semesters,
+                    CourseTypes = request.course_type.Select(ct => new CourseType
                     {
-                        CourseTypeT = (CourseType.CourseTypeEnum)ct.Type,
-                        Credit = ct.Credit,
-                        CourseClasses = Enumerable.Range(1, ct.ClassCount).Select(number => new CourseClass { Number = (CourseClass.ClassNumberEnum)number }).ToList()
+                        CourseTypeT = (CourseType.CourseTypeEnum)ct.type,
+                        Credit = ct.credit,
+                        CourseClasses = Enumerable.Range(1, ct.class_count).Select(number => new CourseClass { Number = (CourseClass.ClassNumberEnum)number }).ToList()
                     }).ToList()
                 };
 
                 _context.Courses.Add(newCourse);
                 _context.SaveChanges();
 
-                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "Success", Data = MapToResponseModel(newCourse) });
+                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse) });
             }
             catch (Exception ex)
             {
@@ -76,7 +76,7 @@ namespace WebApi.Controllers
                     return NotFound(new { Message = "Course not found", Data = id });
                 }
 
-                return Ok(new { Message = "Success", Data = MapToResponseModel(course) });
+                return Ok(new { Message = "success", Data = MapToResponseModel(course) });
             }
             catch (Exception ex)
             {
@@ -90,18 +90,18 @@ namespace WebApi.Controllers
         {
             return new
             {
-                course.Name,
-                course.Code,
-                course.Semesters,
-                CourseTypes = course.CourseTypes.Select(ct => new
+                id = course.Id,
+                name = course.Name,
+                code = course.Code,
+                course_type = course.CourseTypes.Select(ct => new
                 {
-                    ct.Id,
-                    Type = (int)ct.CourseTypeT,
-                    ct.Credit,
-                    CourseClasses = ct.CourseClasses.Select(cc => new
+                    id = ct.Id,
+                    type = (int)ct.CourseTypeT,
+                    credit = ct.Credit,
+                    course_class = ct.CourseClasses.Select(cc => new
                     {
-                        cc.Id,
-                        Number = (int)cc.Number
+                        id = cc.Id,
+                        number = (int)cc.Number
                     }).ToList()
                 }).ToList()
             };
@@ -110,17 +110,17 @@ namespace WebApi.Controllers
 
     public class CourseRequestModel
     {
-        public int SemesterId { get; set; }
-        public string Name { get; set; }
-        public string Code { get; set; }
-        public int Semesters { get; set; }
-        public CourseTypeRequestModel[] CourseType { get; set; }
+        public int semester_id { get; set; }
+        public string name { get; set; }
+        public string code { get; set; }
+        public int semesters { get; set; }
+        public CourseTypeRequestModel[] course_type { get; set; }
     }
 
     public class CourseTypeRequestModel
     {
-        public int Type { get; set; }
-        public int Credit { get; set; }
-        public int ClassCount { get; set; }
+        public int type { get; set; }
+        public int credit { get; set; }
+        public int class_count { get; set; }
     }
 }
