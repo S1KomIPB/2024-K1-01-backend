@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using WebApi.Models;
 
 namespace WebApi.Data
@@ -34,6 +35,16 @@ namespace WebApi.Data
                 .WithOne(cc => cc.CourseTypes)
                 .HasForeignKey(cc => cc.CourseTypeId);
 
+            base.OnModelCreating(modelBuilder);
+        }
+
+        public DbSet<Semester> Semesters { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Semester>(entity =>{
+                entity.HasKey(x => x.Id);
+            });
             base.OnModelCreating(modelBuilder);
         }
     }
