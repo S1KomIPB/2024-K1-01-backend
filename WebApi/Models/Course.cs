@@ -21,6 +21,8 @@ namespace WebApi.Models
         [StringLength(7)]
         public string Code { get; set; }
 
+        [Required]
+        [Range(1, 14, ErrorMessage = "Semester must be between 1 and 14.")]
         public SemesterEnum Semesters { get; set; }
         public List<CourseType> CourseTypes { get; set; }
 

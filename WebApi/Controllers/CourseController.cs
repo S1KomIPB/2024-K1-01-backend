@@ -7,7 +7,7 @@ using WebApi.Models;
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("api/courses")]
+    [Route("courses")]
     public class CourseController : ControllerBase
     {
         private readonly DataContext _context;
@@ -25,6 +25,10 @@ namespace WebApi.Controllers
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
+                }
+                if (_context.Courses.Any(c => c.Code == request.code))
+                {
+                    return Conflict(new { Message = "Course with the same code already exists" });
                 }
 
                 var newCourse = new Course
@@ -48,13 +52,6 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException;
-                if (innerException is SqlException sqlException && sqlException.Number == 2601)
-                {
-                    // Error number 2601 is for unique constraint violation (for SQL Server)
-                    return Conflict(new { Message = "Course with the same code already exists"});
-                }
-
                 Console.WriteLine($"Exception: {ex.Message}");
 
                 return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
@@ -93,6 +90,7 @@ namespace WebApi.Controllers
                 id = course.Id,
                 name = course.Name,
                 code = course.Code,
+                semesters = course.Semesters,
                 course_type = course.CourseTypes.Select(ct => new
                 {
                     id = ct.Id,
@@ -110,17 +108,17 @@ namespace WebApi.Controllers
 
     public class CourseRequestModel
     {
-        public int semester_id { get; set; }
-        public string name { get; set; }
-        public string code { get; set; }
-        public int semesters { get; set; }
-        public CourseTypeRequestModel[] course_type { get; set; }
+        public required int semester_id { get; set; }
+        public required string name { get; set; }
+        public required string code { get; set; }
+        public required int semesters { get; set; }
+        public required CourseTypeRequestModel[] course_type { get; set; }
     }
 
     public class CourseTypeRequestModel
     {
-        public int type { get; set; }
-        public int credit { get; set; }
-        public int class_count { get; set; }
+        public required int type { get; set; }
+        public required int credit { get; set; }
+        public required int class_count { get; set; }
     }
 }

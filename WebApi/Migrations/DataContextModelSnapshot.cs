@@ -22,21 +22,6 @@ namespace WebApi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("WebApi.Models.Semester", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Semesters");
-                });
             modelBuilder.Entity("WebApi.Models.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -66,7 +51,7 @@ namespace WebApi.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("WebApi.Models.CourseClass", b =>
@@ -87,7 +72,7 @@ namespace WebApi.Migrations
 
                     b.HasIndex("CourseTypeId");
 
-                    b.ToTable("CourseClasses");
+                    b.ToTable("CourseClasses", (string)null);
                 });
 
             modelBuilder.Entity("WebApi.Models.CourseType", b =>
@@ -111,7 +96,23 @@ namespace WebApi.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("CourseTypes");
+                    b.ToTable("CourseTypes", (string)null);
+                });
+
+            modelBuilder.Entity("WebApi.Models.Semester", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Semesters", (string)null);
                 });
 
             modelBuilder.Entity("WebApi.Models.CourseClass", b =>
