@@ -14,6 +14,7 @@ namespace WebApi.Data
         public DbSet<CourseType> CourseTypes { get; set; }
         public DbSet<CourseClass> CourseClasses { get; set; }
         public DbSet<Semester> Semesters { get; set; }
+        public DbSet<Schedule> Schedule { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +39,11 @@ namespace WebApi.Data
 
             modelBuilder.Entity<Semester>()
                 .HasKey(x => x.Id);
+
+            modelBuilder.Entity<Schedule>()
+                .HasOne(s => s.CourseClass)
+                .WithMany(cc => cc.Schedules)
+                .HasForeignKey(s => s.CourseClassId);
 
             base.OnModelCreating(modelBuilder);
         }
