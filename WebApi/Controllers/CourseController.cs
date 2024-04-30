@@ -83,6 +83,52 @@ namespace WebApi.Controllers
             }
         }
 
+        [HttpGet("class/{id}")]
+        public ActionResult<CourseClass> GetCourseClass(int id)
+        {
+            try
+            {
+                var courseClass = _context.CourseClasses
+                    .Include(cc => cc.CourseTypes)
+                        .ThenInclude(ct => ct.Courses)
+                    .Include(cc => cc.Schedules)
+                    .FirstOrDefault(cc => cc.Id == id);
+
+                if (courseClass == null)
+                {
+                    return NotFound(new { Message = "Course Class not found", Data = id });
+                }
+
+                return Ok(new { Message = "success", Data = MapToResponseModelCourseClass(courseClass) });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+
+        private object MapToResponseModelCourseClass(CourseClass courseClass)
+        {
+            return new
+            {
+                id = courseClass.Id,
+                number = (int)courseClass.Number,
+                course_id = courseClass.CourseTypes.CourseId,
+                course_name = courseClass.CourseTypes.Courses.Name,
+                course_code = courseClass.CourseTypes.Courses.Code,
+                course_type = courseClass.CourseTypeId,
+                course_credit = courseClass.CourseTypes.Credit,
+                schedule = courseClass.Schedules.Select(s => new
+                {
+                    id = s.Id,
+                    meet_number = s.MeetNumber,
+                    teacher_id = s.Teacher
+                }).ToList()
+            };
+        }
+
         private object MapToResponseModel(Course course)
         {
             return new
