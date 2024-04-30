@@ -43,10 +43,10 @@ namespace WebApi.Controllers
                 if (semester == null)
                     return NotFound(new { Message = "Semester not found", Data = id });
                 
-                    // var courses = await _context.Courses
-                    //     .Where(c => c.SemesterId == id)
-                    //     .Include(c => c.CourseTypes)
-                    //     .ToListAsync();
+                    var courses = await _context.Courses
+                        .Where(c => c.SemesterId == id)
+                        .Include(c => c.CourseTypes)
+                        .ToListAsync();
 
                 var response = new
                 {
@@ -55,19 +55,18 @@ namespace WebApi.Controllers
                     {
                         id = semester.Id,
                         date = semester.Date.ToString("yyyy-MM-dd"),
-                        // courses = courses.Select(c => new
-                        // {
-                        //     id = c.Id,
-                        //     name = c.Name,
-                        //     code = c.Code,
-                        //     course_type = c.CourseTypes.Select(ct => new
-                        //     {
-                        //         id = ct.Id,
-                        //         type = ct.Type,
-                        //         credit = ct.Credit
-                        //     }).ToList()
-                        // }).ToList()
-                        courses = "Test"
+                        courses = courses.Select(c => new
+                        {
+                            id = c.Id,
+                            name = c.Name,
+                            code = c.Code,
+                            course_type = c.CourseTypes.Select(ct => new
+                            {
+                                id = ct.Id,
+                                type = ct.Type,
+                                credit = ct.Credit
+                            }).ToList()
+                        }).ToList()
                     }
                 };
 
