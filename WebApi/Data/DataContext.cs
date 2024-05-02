@@ -14,9 +14,17 @@ namespace WebApi.Data
         public DbSet<CourseType> CourseTypes { get; set; }
         public DbSet<CourseClass> CourseClasses { get; set; }
         public DbSet<Semester> Semesters { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.InitialChar)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.Id);
+
             modelBuilder.Entity<Course>()
                 .HasIndex(c => c.Code)
                 .IsUnique();

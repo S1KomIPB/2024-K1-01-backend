@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
@@ -17,6 +18,7 @@ namespace WebApi.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public ActionResult<Course> CreateCourse([FromBody] CourseRequestModel request)
         {
@@ -58,6 +60,7 @@ namespace WebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public ActionResult<Course> GetCourse(int id)
         {
