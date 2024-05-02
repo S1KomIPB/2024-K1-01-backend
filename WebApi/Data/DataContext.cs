@@ -53,6 +53,11 @@ namespace WebApi.Data
                 .WithMany(cc => cc.Schedules)
                 .HasForeignKey(s => s.CourseClassId);
 
+            modelBuilder.Entity<Schedule>()
+                .HasOne(s => s.CourseClass)
+                .WithMany(cc => cc.Schedules)
+                .HasForeignKey(s => s.CourseClassId);
+
             base.OnModelCreating(modelBuilder);
         }
     }

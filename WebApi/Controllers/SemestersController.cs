@@ -80,6 +80,7 @@ namespace WebApi.Controllers
             }
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpPost]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {

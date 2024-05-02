@@ -30,19 +30,31 @@ namespace WebApi.Controllers
         {    
             var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == request.initial && u.Password == request.password);
 
-            // Here you would validate the username and password, for simplicity, I'll just hardcode
             if (user == null)
             {
-                return Unauthorized("Invalid username or password");
+                return Unauthorized(new { Message = "invalid username or password" });
             }
 
             if (user.IsActive == false)
             {
-                return Forbid("Your account is inactive.");
+                return Unauthorized(new { Message = "Your account is inactive." });
             }
 
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token });
+
+            return Ok(new
+            {
+                Message = "Success",
+                Data = new
+                {
+                    id = user.Id,
+                    Token = token,
+                    name = user.Name,
+                    initials = user.InitialChar,
+                    is_admin = user.IsAdmin,
+                    is_active = user.IsActive,
+                }
+            });
         }
 
         // PUT: api/Users/5
@@ -57,7 +69,7 @@ namespace WebApi.Controllers
                 if (identity == null) {
                     return BadRequest(new { messsage = "tt" });
                 }
-
+        
                 return Ok(new { message = "yes"});
 
 

@@ -17,7 +17,7 @@ namespace WebApi.Controllers
             _context = context;
         }
 
-        // GET: api/Users
+        // GET: {{base_url}}/users
         [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
@@ -37,7 +37,7 @@ namespace WebApi.Controllers
         }
 
 
-        // GET: api/Users/5
+        // GET: {{base_url}}/users/5
         [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
@@ -62,7 +62,7 @@ namespace WebApi.Controllers
             });
         }
 
-        // POST: api/Users
+        // POST: {{base_url}}/users
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserRequest request)
@@ -94,7 +94,7 @@ namespace WebApi.Controllers
                 return CreatedAtAction(
                         nameof(GetUser), 
                         new { id = newUser.Id }, 
-                        new { Message = "success", 
+                        new { Message = "Success", 
                               Data = new {
                                   id = newUser.Id,
                                   name = newUser.Name,
@@ -112,7 +112,7 @@ namespace WebApi.Controllers
             }
         }
 
-        // PUT: api/Users/5
+        // PUT: {{base_url}}/users/5
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserUpdateRequest request)
@@ -120,6 +120,11 @@ namespace WebApi.Controllers
 
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
                 var user = await _context.Users.FindAsync(id);
 
                 if (user == null)
@@ -127,7 +132,10 @@ namespace WebApi.Controllers
                     return NotFound(new { Message = "user not found" });
                 }
 
-                // Update user properties if corresponding request parameters are not null
+                if (_context.Users.Any(u => u.InitialChar == request.initials) && user.InitialChar != request.initials)
+                {
+                    return Conflict(new { Message = "User with the same initial already exist" });
+                }
                 user.Name = request.name ?? user.Name;
                 user.InitialChar = request.initials ?? user.InitialChar;
                 user.IsAdmin = request.is_admin;
@@ -135,11 +143,20 @@ namespace WebApi.Controllers
                 user.Password = request.password ?? user.Password;
                 user.Email = request.email ?? user.Email;
 
-                // Save the changes to the database
                 await _context.SaveChangesAsync();
 
-                    // Return a response indicating success
-                return Ok(user);
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
             }
 
             catch (Exception ex)

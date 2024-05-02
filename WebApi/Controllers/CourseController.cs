@@ -86,6 +86,7 @@ namespace WebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("class/{id}")]
         public ActionResult<CourseClass> GetCourseClass(int id)
         {
