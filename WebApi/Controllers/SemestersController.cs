@@ -16,10 +16,14 @@ namespace WebApi.Controllers
             _context = context;
         }
 
-        [Authorize]
         [HttpGet]
         public async Task<ActionResult<List<Semester>>> Get()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
+
             var semesters = await _context.Semesters.ToListAsync();
 
             if(semesters == null){
@@ -35,12 +39,16 @@ namespace WebApi.Controllers
             });
         }
 
-        [Authorize]
         [HttpGet]
         [Route("{id}")]
         public async Task<ActionResult<Semester>> Get(int id)
         {
-            try{
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
+            try
+            {
                 var semester = await _context.Semesters.FindAsync(id);
 
                 if (semester == null)
@@ -80,11 +88,15 @@ namespace WebApi.Controllers
             }
         }
 
-        [Authorize(Roles ="Admin")]
         [HttpPost]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {
-            try{
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
+            {
+                return Unauthorized(new { Message = "Admin privileges required" });
+            }
+            try
+            {
                 var semester = new Semester
                 {
                     Date = request.Date

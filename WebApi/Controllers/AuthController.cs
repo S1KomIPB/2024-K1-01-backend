@@ -59,42 +59,55 @@ namespace WebApi.Controllers
 
         // PUT: api/Users/5
         [Authorize]
-        [HttpPut("/auth/password")]
-        public async Task<IActionResult> UpdatePassword(ChangePasswordRequest request)
+        [HttpPut("password")]
+        public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request)
         {
-
             try
             {
-                var identity = HttpContext.User.Claims as ClaimsIdentity;
-                if (identity == null) {
-                    return BadRequest(new { messsage = "tt" });
+                var identity = HttpContext.User.Identity as ClaimsIdentity;
+                if (identity == null)
+                {
+                    return BadRequest(new { Message = "Invalid token." });
                 }
-        
-                return Ok(new { message = "yes"});
 
-
-
-
-                var user = "tes";
+                var userInitial = identity.FindFirst(ClaimTypes.Name)?.Value;
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
 
                 if (user == null)
                 {
-                    return NotFound(new { Message = "user not found" });
+                    return NotFound(new { Message = "User not found." });
                 }
 
-                // Update user properties if corresponding request parameters are not null
+                if (user.Password != request.old_password)
+                {
+                    return Unauthorized(new { Message = "Old password is incorrect." });
+                }
 
-                // Save the changes to the database
+                if (request.new_password != request.confirm_new_password)
+                {
+                    return BadRequest(new { Message = "New passwords do not match." });
+                }
+
+                user.Password = request.new_password;
+                _context.Users.Update(user);
                 await _context.SaveChangesAsync();
 
-                // Return a response indicating success
-                return Ok(user);
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
             }
-
             catch (Exception ex)
             {
                 Console.WriteLine($"Exception: {ex.Message}");
-
                 return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
             }
         }

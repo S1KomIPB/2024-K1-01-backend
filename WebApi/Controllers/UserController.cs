@@ -18,10 +18,13 @@ namespace WebApi.Controllers
         }
 
         // GET: {{base_url}}/users
-        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             var users =  await _context.Users.ToListAsync();
             return Ok(new
             {
@@ -38,10 +41,14 @@ namespace WebApi.Controllers
 
 
         // GET: {{base_url}}/users/5
-        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
+
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
@@ -63,10 +70,13 @@ namespace WebApi.Controllers
         }
 
         // POST: {{base_url}}/users
-        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserRequest request)
         {
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
+            {
+                return Unauthorized(new { Message = "Admin privileges required" });
+            }
             try
             {
                 if (!ModelState.IsValid)
@@ -113,11 +123,13 @@ namespace WebApi.Controllers
         }
 
         // PUT: {{base_url}}/users/5
-        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserUpdateRequest request)
         {
-
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
+            {
+                return Unauthorized(new { Message = "Admin privileges required" });
+            }
             try
             {
                 if (!ModelState.IsValid)
