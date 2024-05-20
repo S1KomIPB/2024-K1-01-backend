@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
 using WebApi.Models;
+using BCrypt.Net;
 
 namespace WebApi.Controllers
 {
@@ -94,10 +95,10 @@ namespace WebApi.Controllers
                     InitialChar = request.initials,
                     IsAdmin = request.is_admin,
                     IsActive = request.is_active,
-                    Password = request.password,
+                    Password = BCrypt.Net.BCrypt.HashPassword(request.password),
                     Email = request.email,
                 };
-
+                
                 _context.Users.Add(newUser);
                 _context.SaveChanges();
 
@@ -157,8 +158,8 @@ namespace WebApi.Controllers
                 user.InitialChar = request.initials ?? user.InitialChar;
                 user.IsAdmin = request.is_admin;
                 user.IsActive = request.is_active;
-                user.Password = request.password ?? user.Password;
                 user.Email = request.email ?? user.Email;
+                if (request.password != null) user.Password = BCrypt.Net.BCrypt.HashPassword(request.password);
 
                 await _context.SaveChangesAsync();
 

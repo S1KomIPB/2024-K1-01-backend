@@ -27,12 +27,17 @@ namespace WebApi.Controllers
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
-        {    
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == request.initial && u.Password == request.password);
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == request.initial);
 
             if (user == null)
             {
-                return Unauthorized(new { Message = "invalid username or password" });
+                return Unauthorized(new { Message = "invalid username" });
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(request.password, user.Password))
+            {
+                return Unauthorized(new { Message = "invalid password" });
             }
 
             if (user.IsActive == false)
@@ -78,7 +83,7 @@ namespace WebApi.Controllers
                     return NotFound(new { Message = "User not found." });
                 }
 
-                if (user.Password != request.old_password)
+                if (!BCrypt.Net.BCrypt.Verify(request.old_password, user.Password))
                 {
                     return Unauthorized(new { Message = "Old password is incorrect." });
                 }
@@ -88,7 +93,7 @@ namespace WebApi.Controllers
                     return BadRequest(new { Message = "New passwords do not match." });
                 }
 
-                user.Password = request.new_password;
+                user.Password = BCrypt.Net.BCrypt.HashPassword(request.new_password);
                 _context.Users.Update(user);
                 await _context.SaveChangesAsync();
 
