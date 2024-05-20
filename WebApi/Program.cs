@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApi.Data;
+using WebApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +66,31 @@ var app = builder.Build();
 
 //check connection to the db
 CheckDatabaseConnection(app.Services);
+
+async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
+{
+    using var scope = serviceProvider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<DataContext>();
+    var adminExists = await context.Users.AnyAsync(u => u.IsAdmin && u.IsActive);
+    var usersCount = await context.Users.CountAsync();
+    if (!adminExists)
+    {
+        var user = new User
+        {
+            Name = builder.Configuration["Admin:Name"],
+            InitialChar = builder.Configuration["Admin:InitialChar"],
+            IsAdmin = true,
+            Password = builder.Configuration["Admin:Password"],
+            Email = "",
+            IsActive = true
+        };
+
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+    }
+}
+
+await InitializeDatabaseAsync(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

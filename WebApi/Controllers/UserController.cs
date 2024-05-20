@@ -144,6 +144,11 @@ namespace WebApi.Controllers
                     return NotFound(new { Message = "user not found" });
                 }
 
+                if (user.InitialChar == "ADM")
+                {
+                    return Unauthorized(new { Message = "Cannot change superadmin" });
+                }
+
                 if (_context.Users.Any(u => u.InitialChar == request.initials) && user.InitialChar != request.initials)
                 {
                     return Conflict(new { Message = "User with the same initial already exist" });
