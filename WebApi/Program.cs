@@ -5,6 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApi.Data;
 using WebApi.Models;
+using BCrypt.Net;
+using Azure.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,7 +82,7 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
             Name = builder.Configuration["Admin:Name"],
             InitialChar = builder.Configuration["Admin:InitialChar"],
             IsAdmin = true,
-            Password = builder.Configuration["Admin:Password"],
+            Password = BCrypt.Net.BCrypt.HashPassword(builder.Configuration["Admin:Password"]),
             Email = "",
             IsActive = true
         };
