@@ -16,10 +16,14 @@ namespace WebApi.Models
         [Required]
         public int CourseClassId { get; set; }
 
+        [ForeignKey("User")]
+        [Required]
+        public int UserId { get; set; }
+
         [Required]
         public int MeetNumber { get; set; }
 
         public CourseClass CourseClass { get; set; }
-
+        public User User { get; set; }
     }
 }

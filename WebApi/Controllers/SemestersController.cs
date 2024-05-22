@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
@@ -18,6 +19,11 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Semester>>> Get()
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
+
             var semesters = await _context.Semesters.ToListAsync();
 
             if(semesters == null){
@@ -37,7 +43,12 @@ namespace WebApi.Controllers
         [Route("{id}")]
         public async Task<ActionResult<Semester>> Get(int id)
         {
-            try{
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
+            try
+            {
                 var semester = await _context.Semesters.FindAsync(id);
 
                 if (semester == null)
@@ -80,7 +91,12 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {
-            try{
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
+            {
+                return Unauthorized(new { Message = "Admin privileges required" });
+            }
+            try
+            {
                 var semester = new Semester
                 {
                     Date = request.Date
