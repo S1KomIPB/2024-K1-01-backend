@@ -24,7 +24,7 @@ namespace WebApi.Controllers
         {
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
-                return Unauthorized(new { Message = "Login required" });
+                return Unauthorized(new { Message = "Admin privileges required" });
             }
             var users =  await _context.Users.ToListAsync();
             return Ok(new
