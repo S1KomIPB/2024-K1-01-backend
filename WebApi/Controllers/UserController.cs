@@ -22,7 +22,7 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Login required" });
             }
