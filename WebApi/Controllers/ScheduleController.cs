@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -9,78 +10,65 @@ using WebApi.Models;
 
 namespace WebApi.Controllers
 {
-    [Route("[controller]")]
     [ApiController]
-    public class SchedulesController : ControllerBase
+    [Route("/schedules")]
+    public class ScheduleController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public SchedulesController(DataContext context)
+        public ScheduleController(DataContext context)
         {
             _context = context;
         }
 
-        // PUT: /schedules/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTeacher(int id, [FromBody] Schedule schedule)
+        [Authorize]
+        [HttpPut]
+        public async Task<IActionResult> UpdateSchedule(int id)
         {
-            if (id != schedule.Id)
-            {
-                return BadRequest();
-            }
-
-            // Get the currently logged-in user's ID
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Find the schedule by id
-            var existingSchedule = await _context.Schedule.FindAsync(id);
-
-            if (existingSchedule == null)
-            {
-                return NotFound();
-            }
-
-            // Check if the current user has permission to update this schedule
-            if (existingSchedule.Teacher != userId)
-            {
-                return Forbid();
-            }
-
-            // Update the teacher ID
-            existingSchedule.Teacher = userId;
-
             try
             {
+
+                var userInitial = User.FindFirst(ClaimTypes.Name)?.Value;
+
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+ 
+                var schedule = await _context.Schedules.FindAsync(id);
+
+                if (schedule == null)
+                {
+                    return NotFound(new { Message = "Schedule not found." });
+                }
+
+
+                schedule.TeacherId = user.Id;
+
+                _context.Schedules.Update(schedule);
                 await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ScheduleExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
 
-            return Ok(new
-            {
-                message = "success",
-                data = new
+                return Ok(new
                 {
-                    id = existingSchedule.Id,
-                    meet_number = existingSchedule.MeetNumber,
-                    teacher_id = existingSchedule.Teacher,
-                    course_class_id = existingSchedule.CourseClassId
-                }
-            });
-        }
-
-        private bool ScheduleExists(int id)
-        {
-            return _context.Schedule.Any(e => e.Id == id);
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = schedule.Id,
+                        meet_number = schedule.MeetNumber,
+                        teacher_id = schedule.TeacherId,
+                        course_class_id = schedule.CourseClassId
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
         }
     }
 }

@@ -137,7 +137,7 @@ namespace WebApi.Controllers
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,
-                    teacher_id = s.Teacher
+                    teacher_id = s.TeacherId
                 }).ToList()
             };
         }
