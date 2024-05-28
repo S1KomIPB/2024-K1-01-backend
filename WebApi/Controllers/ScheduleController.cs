@@ -1,68 +1,53 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using WebApi.Data;
 using WebApi.Models;
 
 namespace WebApi.Controllers
 {
+    [Route("[controller]")]
     [ApiController]
-    [Route("schedule")]
-    public class ScheduleController : ControllerBase
+    public class SchedulesController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public ScheduleController(DataContext context)
+        public SchedulesController(DataContext context)
         {
             _context = context;
         }
 
-        // GET: schedule
-        [HttpGet]
-        public async Task<IActionResult> GetAllSchedules()
-        {
-            var schedules = await _context.Schedule.ToListAsync();
-            return Ok(schedules);
-        }
-
-        // GET: schedule/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetScheduleById(int id)
-        {
-            var schedule = await _context.Schedule.FindAsync(id);
-
-            if (schedule == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(schedule);
-        }
-
-        // POST: schedule
-        [HttpPost]
-        public async Task<IActionResult> CreateSchedule(Schedule schedule)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.Schedule.Add(schedule);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetScheduleById), new { id = schedule.Id }, schedule);
-        }
-
-        // PUT: schedule/{id}
+        // PUT: /schedules/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSchedule(int id, Schedule schedule)
+        public async Task<IActionResult> UpdateTeacher(int id, [FromBody] Schedule schedule)
         {
             if (id != schedule.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(schedule).State = EntityState.Modified;
+            // Get the currently logged-in user's ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Find the schedule by id
+            var existingSchedule = await _context.Schedule.FindAsync(id);
+
+            if (existingSchedule == null)
+            {
+                return NotFound();
+            }
+
+            // Check if the current user has permission to update this schedule
+            if (existingSchedule.Teacher != userId)
+            {
+                return Forbid();
+            }
+
+            // Update the teacher ID
+            existingSchedule.Teacher = userId;
 
             try
             {
@@ -80,23 +65,17 @@ namespace WebApi.Controllers
                 }
             }
 
-            return NoContent();
-        }
-
-        // DELETE: schedule/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSchedule(int id)
-        {
-            var schedule = await _context.Schedule.FindAsync(id);
-            if (schedule == null)
+            return Ok(new
             {
-                return NotFound();
-            }
-
-            _context.Schedule.Remove(schedule);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+                message = "success",
+                data = new
+                {
+                    id = existingSchedule.Id,
+                    meet_number = existingSchedule.MeetNumber,
+                    teacher_id = existingSchedule.Teacher,
+                    course_class_id = existingSchedule.CourseClassId
+                }
+            });
         }
 
         private bool ScheduleExists(int id)
