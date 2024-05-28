@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
@@ -20,6 +21,10 @@ namespace WebApi.Controllers
         [HttpPost]
         public ActionResult<Course> CreateCourse([FromBody] CourseRequestModel request)
         {
+            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
+            {
+                return Unauthorized(new { Message = "Admin privileges required" });
+            }
             try
             {
                 if (!ModelState.IsValid)
@@ -61,6 +66,10 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public ActionResult<Course> GetCourse(int id)
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             try
             {
                 var course = _context.Courses
@@ -86,6 +95,10 @@ namespace WebApi.Controllers
         [HttpGet("class/{id}")]
         public ActionResult<CourseClass> GetCourseClass(int id)
         {
+            if (!User.Identity.IsAuthenticated)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             try
             {
                 var courseClass = _context.CourseClasses
