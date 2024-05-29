@@ -9,16 +9,13 @@ namespace WebApi.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
+        [ForeignKey("User")]
         [Required]
-        public int Teacher { get; set; }
+        public int? TeacherId { get; set; }
 
         [ForeignKey("CourseClass")]
         [Required]
         public int CourseClassId { get; set; }
-
-        [ForeignKey("User")]
-        [Required]
-        public int UserId { get; set; }
 
         [Required]
         public int MeetNumber { get; set; }
