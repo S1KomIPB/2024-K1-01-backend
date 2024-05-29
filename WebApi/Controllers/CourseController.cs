@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
+    [AuthRequired]
     [Route("courses")]
     public class CourseController : ControllerBase
     {
@@ -17,16 +19,9 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public ActionResult<Course> CreateCourse([FromBody] CourseRequestModel request)
+        [AdminRequired]
+        public async Task<ActionResult<Course>> CreateCourse([FromBody] CourseRequestModel request)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)
@@ -78,8 +73,8 @@ namespace WebApi.Controllers
                     }
                 }
 
-                _context.Courses.Add(newCourse);
-                _context.SaveChanges();
+                await _context.Courses.AddAsync(newCourse);
+                await _context.SaveChangesAsync();
 
                 return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse) });
             }
@@ -92,22 +87,14 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Course> GetCourse(int id)
+        public async Task<ActionResult<Course>> GetCourse(int id)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
             try
             {
-                var course = _context.Courses
+                var course = await _context.Courses
                     .Include(c => c.CourseTypes)
                         .ThenInclude(ct => ct.CourseClasses)
-                    .FirstOrDefault(c => c.Id == id);
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (course == null)
                 {
@@ -125,23 +112,15 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("class/{id}")]
-        public ActionResult<CourseClass> GetCourseClass(int id)
+        public async Task<ActionResult<CourseClass>> GetCourseClass(int id)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
             try
             {
-                var courseClass = _context.CourseClasses
+                var courseClass = await _context.CourseClasses
                     .Include(cc => cc.CourseType)
                         .ThenInclude(ct => ct.Course)
                     .Include(cc => cc.Schedules)
-                    .FirstOrDefault(cc => cc.Id == id);
+                    .FirstOrDefaultAsync(cc => cc.Id == id);
 
                 if (courseClass == null)
                 {

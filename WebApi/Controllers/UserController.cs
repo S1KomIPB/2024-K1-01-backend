@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
@@ -16,18 +17,10 @@ namespace WebApi.Controllers
             _context = context;
         }
 
-        // GET: {{base_url}}/users
         [HttpGet]
+        [AdminRequired]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             var users =  await _context.Users.ToListAsync();
             return Ok(new
             {
@@ -42,20 +35,10 @@ namespace WebApi.Controllers
             });
         }
 
-
-        // GET: {{base_url}}/users/5
         [HttpGet("{id}")]
+        [AuthRequired]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
@@ -76,18 +59,10 @@ namespace WebApi.Controllers
             });
         }
 
-        // POST: {{base_url}}/users
         [HttpPost]
+        [AdminRequired]
         public ActionResult<User> CreateUser([FromBody] UserRequest request)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)
@@ -116,13 +91,13 @@ namespace WebApi.Controllers
                         nameof(GetUser), 
                         new { id = newUser.Id }, 
                         new { Message = "Success", 
-                              Data = new {
-                                  id = newUser.Id,
-                                  name = newUser.Name,
-                                  initials = newUser.InitialChar,
-                                  is_admin = newUser.IsAdmin,
-                                  is_active = newUser.IsActive,
-                              }
+                                Data = new {
+                                    id = newUser.Id,
+                                    name = newUser.Name,
+                                    initials = newUser.InitialChar,
+                                    is_admin = newUser.IsAdmin,
+                                    is_active = newUser.IsActive,
+                                }
                         });
             }
             catch (Exception ex)
@@ -133,18 +108,10 @@ namespace WebApi.Controllers
             }
         }
 
-        // PUT: {{base_url}}/users/5
         [HttpPut("{id}")]
+        [AdminRequired]
         public async Task<IActionResult> UpdateUser(int id, UserUpdateRequest request)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)

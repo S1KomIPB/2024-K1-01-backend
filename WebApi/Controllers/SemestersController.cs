@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
     [Route("/[controller]")]
+    [AuthRequired]
     public class SemestersController : ControllerBase
     {
         private readonly DataContext _context;
@@ -18,15 +20,6 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Semester>>> Get()
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-
             var semesters = await _context.Semesters.ToListAsync();
 
             if(semesters == null){
@@ -46,14 +39,6 @@ namespace WebApi.Controllers
         [Route("{id}")]
         public async Task<ActionResult<Semester>> Get(int id)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
             try
             {
                 var semester = await _context.Semesters.FindAsync(id);
@@ -96,16 +81,9 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
+        [AdminRequired]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {
-            if (User.Identity == null)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 var semester = new Semester

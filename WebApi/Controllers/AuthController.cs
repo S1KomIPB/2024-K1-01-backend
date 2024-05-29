@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,8 +5,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using WebApi.Config;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
-
 
 namespace WebApi.Controllers
 {
@@ -59,8 +58,7 @@ namespace WebApi.Controllers
             });
         }
 
-        // PUT: api/Users/5
-        [Authorize]
+        [AuthRequired]
         [HttpPut("password")]
         public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request)
         {
