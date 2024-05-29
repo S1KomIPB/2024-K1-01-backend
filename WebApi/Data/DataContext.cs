@@ -55,7 +55,7 @@ namespace WebApi.Data
             modelBuilder.Entity<Schedule>()
                 .HasOne(s => s.User)
                 .WithMany(u => u.Schedules)
-                .HasForeignKey(s => s.TeacherId)
+                .HasForeignKey(s => s.UserId)
                 .IsRequired(false);
 
             base.OnModelCreating(modelBuilder);

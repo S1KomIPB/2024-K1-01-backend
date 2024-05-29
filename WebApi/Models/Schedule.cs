@@ -10,8 +10,7 @@ namespace WebApi.Models
         public int Id { get; set; }
 
         [ForeignKey("User")]
-        [Required]
-        public int? TeacherId { get; set; }
+        public int? UserId { get; set; }
 
         [ForeignKey("CourseClass")]
         [Required]
@@ -21,6 +20,6 @@ namespace WebApi.Models
         public int MeetNumber { get; set; }
 
         public required CourseClass CourseClass { get; set; }
-        public required User User { get; set; }
+        public User? User { get; set; }
     }
 }

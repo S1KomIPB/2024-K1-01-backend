@@ -43,7 +43,7 @@ namespace WebApi.Controllers
                 }
 
 
-                schedule.TeacherId = user.Id;
+                schedule.UserId = user.Id;
 
                 _context.Schedules.Update(schedule);
                 await _context.SaveChangesAsync();
@@ -55,7 +55,7 @@ namespace WebApi.Controllers
                     {
                         id = schedule.Id,
                         meet_number = schedule.MeetNumber,
-                        teacher_id = schedule.TeacherId,
+                        teacher_id = schedule.UserId,
                         course_class_id = schedule.CourseClassId
                     }
                 });

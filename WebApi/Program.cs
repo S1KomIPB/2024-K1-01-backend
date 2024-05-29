@@ -73,7 +73,7 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
             Name = Secret.AdminName,
             InitialChar = Secret.AdminInitials,
             IsAdmin = true,
-            Password = Secret.AdminPassword,
+            Password = BCrypt.Net.BCrypt.HashPassword(Secret.AdminPassword),
             Email = "",
             IsActive = true
         };

@@ -30,7 +30,7 @@ namespace WebApi.Models
         [StringLength(100)]
         public string? Email { get; set; }
 
-        public ICollection<Schedule>? Schedules { get; set; }
+        public List<Schedule> Schedules { get; set; } = new List<Schedule>();
     }
 }
 

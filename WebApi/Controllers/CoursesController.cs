@@ -9,11 +9,11 @@ namespace WebApi.Controllers
     [ApiController]
     [AuthRequired]
     [Route("/[controller]")]
-    public class CourseController : ControllerBase
+    public class CoursesController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public CourseController(DataContext context)
+        public CoursesController(DataContext context)
         {
             _context = context;
         }
@@ -68,6 +68,16 @@ namespace WebApi.Controllers
                             Number = (CourseClass.ClassNumberEnum)j,
                             CourseType = newCourseType
                         };
+
+                        for (int k = 1; k <= 14; k++)
+                        {
+                            var newSchedule = new Schedule
+                            {
+                                MeetNumber = k,
+                                CourseClass = newCourseClass
+                            };
+                            newCourseClass.Schedules.Add(newSchedule);
+                        }
 
                         newCourseType.CourseClasses.Add(newCourseClass);
                     }
@@ -152,7 +162,7 @@ namespace WebApi.Controllers
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,
-                    teacher_id = s.TeacherId
+                    teacher_id = s.UserId
                 }).ToList()
             };
         }
