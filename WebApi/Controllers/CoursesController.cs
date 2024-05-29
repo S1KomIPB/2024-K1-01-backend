@@ -33,6 +33,12 @@ namespace WebApi.Controllers
                     return Conflict(new { Message = "Course with the same code already exists" });
                 }
 
+                var semester = await _context.Semesters.FindAsync(request.semester_id);
+                if (semester == null)
+                {
+                    return NotFound(new { Message = "Semester not found", Data = request.semester_id });
+                }
+
                 var newCourse = new Course
                 {
                     SemesterId = request.semester_id,
@@ -86,7 +92,7 @@ namespace WebApi.Controllers
                 await _context.Courses.AddAsync(newCourse);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse) });
+                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse, semester.Date) });
             }
             catch (Exception ex)
             {
@@ -110,8 +116,13 @@ namespace WebApi.Controllers
                 {
                     return NotFound(new { Message = "Course not found", Data = id });
                 }
+                var semester = await _context.Semesters.FindAsync(course.SemesterId);
+                if (semester == null)
+                {
+                    return NotFound(new { Message = "Semester not found", Data = course.SemesterId });
+                }
 
-                return Ok(new { Message = "success", Data = MapToResponseModel(course) });
+                return Ok(new { Message = "success", Data = MapToResponseModel(course, semester.Date) });
             }
             catch (Exception ex)
             {
@@ -167,7 +178,7 @@ namespace WebApi.Controllers
             };
         }
 
-        private object MapToResponseModel(Course course)
+        private object MapToResponseModel(Course course, DateTime semesterStart)
         {
             return new
             {
@@ -175,6 +186,7 @@ namespace WebApi.Controllers
                 name = course.Name,
                 code = course.Code,
                 semesters = course.Semesters,
+                semester_start = semesterStart,
                 course_type = course.CourseTypes.Select(ct => new
                 {
                     id = ct.Id,
