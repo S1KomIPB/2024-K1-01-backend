@@ -2,16 +2,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using WebApi.Config;
 using WebApi.Data;
 using WebApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+Secret.Initialize(builder.Configuration);
 
-//load .env file
-DotNetEnv.Env.Load();
-
-
-//db connection function
 static void CheckDatabaseConnection(IServiceProvider serviceProvider)
 {
     using var scope = serviceProvider.CreateScope();
@@ -30,9 +27,6 @@ static void CheckDatabaseConnection(IServiceProvider serviceProvider)
     }
 }
 
-//connectionString
-var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
-
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -40,16 +34,15 @@ builder.Services.AddAuthentication(x =>
     x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? throw new Exception("JwtSettings is missing in appsettings.json");
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = false,
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // Specify the expected issuer to validate against
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+        ValidIssuer = Secret.JWTIssuer,
+        ValidAudience = Secret.JWTAudience,
+        IssuerSigningKey = Secret.JWTSecretKey
     };
 });
 
@@ -60,7 +53,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(Secret.ConnectionString));
 
 var app = builder.Build();
 
@@ -78,10 +71,10 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
 
         var user = new User
         {
-            Name = builder.Configuration["Admin:Name"],
-            InitialChar = builder.Configuration["Admin:InitialChar"] ?? throw new Exception("InitialChar is missing in appsettings.json"),
+            Name = Secret.AdminName,
+            InitialChar = Secret.AdminInitials,
             IsAdmin = true,
-            Password = BCrypt.Net.BCrypt.HashPassword(builder.Configuration["Admin:Password"]),
+            Password = Secret.AdminPassword,
             Email = "",
             IsActive = true
         };

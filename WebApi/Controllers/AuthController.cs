@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
+using WebApi.Config;
 using WebApi.Data;
 using WebApi.Models;
 
@@ -17,11 +16,9 @@ namespace WebApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly DataContext _context;
-        private readonly IConfiguration _configuration;
 
-        public AuthController(IConfiguration configuration, DataContext context)
+        public AuthController(DataContext context)
         {
-            _configuration = configuration;
             _context = context;
         }
 
@@ -119,9 +116,7 @@ namespace WebApi.Controllers
 
         private string GenerateJwtToken(User user)
         {
-            var secretKey = _configuration["JwtSettings:SecretKey"] ?? throw new Exception("JwtSettings is missing in appsettings.json");
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var credentials = new SigningCredentials(Secret.JWTSecretKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
@@ -130,10 +125,10 @@ namespace WebApi.Controllers
             };
 
             var token = new JwtSecurityToken(
-                _configuration["JwtSettings:Issuer"],
-                _configuration["JwtSettings:Audience"],
+                Secret.JWTIssuer,
+                Secret.JWTAudience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["JwtSettings:ExpirationInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(Secret.JWTExpirationInMinutes)),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
