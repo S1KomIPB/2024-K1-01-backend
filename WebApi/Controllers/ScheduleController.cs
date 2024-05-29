@@ -18,7 +18,7 @@ namespace WebApi.Controllers
         }
 
         [Authorize]
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateSchedule(int id)
         {
             try
