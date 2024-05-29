@@ -112,6 +112,90 @@ namespace WebApi.Controllers
             }
         }
 
+        [AdminRequired]
+        [HttpPut("activate/{initial}")]
+        public async Task<IActionResult> ActivateUser(string initial)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == initial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                if (user.IsActive)
+                {
+                    return Conflict(new { Message = "User is already active." });
+                }
+
+                user.IsActive = true;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+        
+        [AdminRequired]
+        [HttpPut("deactivate/{initial}")]
+        public async Task<IActionResult> DeactivateUser(string initial)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == initial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                if (!user.IsActive)
+                {
+                    return Conflict(new { Message = "User is already inactive." });
+                }
+
+                user.IsActive = false;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+
         private string GenerateJwtToken(User user)
         {
             var credentials = new SigningCredentials(Secret.JWTSecretKey, SecurityAlgorithms.HmacSha256);
