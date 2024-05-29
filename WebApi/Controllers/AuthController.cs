@@ -202,13 +202,12 @@ namespace WebApi.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, user.InitialChar),
-                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+                new Claim("id", user.Id.ToString()),
+                new Claim("initial", user.InitialChar),
+                new Claim("role", user.IsAdmin ? "admin" : "user")
             };
 
             var token = new JwtSecurityToken(
-                Secret.JWTIssuer,
-                Secret.JWTAudience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(Secret.JWTExpirationInMinutes)),
                 signingCredentials: credentials);

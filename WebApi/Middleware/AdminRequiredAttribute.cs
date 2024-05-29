@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -7,9 +8,9 @@ namespace WebApi.Middleware
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (!context.HttpContext.User.IsInRole("Admin"))
+            if (context.HttpContext.User.FindFirstValue("role") != "admin")
             {
-                context.Result = new UnauthorizedObjectResult(new { Message = "Admin privileges required" });
+                context.Result = new ForbidResult();
                 return;
             }
 

@@ -43,6 +43,7 @@ builder.Services.AddAuthentication(x =>
         ValidAudience = Secret.JWTAudience,
         IssuerSigningKey = Secret.JWTSecretKey
     };
+    options.MapInboundClaims = false;
 });
 
 builder.Services.AddAuthorization();
