@@ -119,7 +119,8 @@ namespace WebApi.Controllers
 
         private string GenerateJwtToken(User user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
+            var secretKey = _configuration["JwtSettings:SecretKey"] ?? throw new Exception("JwtSettings is missing in appsettings.json");
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -141,13 +142,13 @@ namespace WebApi.Controllers
 
     public class LoginRequest
     {
-        public string initial { get; set; }
-        public string password { get; set; }
+        public required string initial { get; set; }
+        public required string password { get; set; }
     }
     public class ChangePasswordRequest
     {
-        public string old_password { get; set; }
-        public string new_password { get; set; }
-        public string confirm_new_password { get; set;}
+        public required string old_password { get; set; }
+        public required string new_password { get; set; }
+        public required string confirm_new_password { get; set;}
     }
 }

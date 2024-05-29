@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using WebApi.Models;
 
 namespace WebApi.Models
 {
@@ -15,16 +14,16 @@ namespace WebApi.Models
 
         [Required]
         [StringLength(50)]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [Required]
         [StringLength(7)]
-        public string Code { get; set; }
+        public required string Code { get; set; }
 
         [Required]
         [Range(1, 14, ErrorMessage = "Semester must be between 1 and 14.")]
         public SemesterEnum Semesters { get; set; }
-        public List<CourseType> CourseTypes { get; set; }
+        public List<CourseType> CourseTypes { get; set; } = new List<CourseType>();
 
         public enum SemesterEnum
         {

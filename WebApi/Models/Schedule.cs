@@ -20,7 +20,7 @@ namespace WebApi.Models
         [Required]
         public int MeetNumber { get; set; }
 
-        public CourseClass CourseClass { get; set; }
-        public User User { get; set; }
+        public required CourseClass CourseClass { get; set; }
+        public required User User { get; set; }
     }
 }

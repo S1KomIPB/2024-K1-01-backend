@@ -21,6 +21,10 @@ namespace WebApi.Controllers
         [HttpPost]
         public ActionResult<Course> CreateCourse([FromBody] CourseRequestModel request)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Admin privileges required" });
@@ -42,13 +46,39 @@ namespace WebApi.Controllers
                     Name = request.name,
                     Code = request.code,
                     Semesters = (Course.SemesterEnum)request.semesters,
-                    CourseTypes = request.course_type.Select(ct => new CourseType
+                    CourseTypes = new List<CourseType>()
+                };
+
+                foreach (var ct in request.course_type)
+                {
+                    var newCourseType = new CourseType
                     {
                         CourseTypeT = (CourseType.CourseTypeEnum)ct.type,
                         Credit = ct.credit,
-                        CourseClasses = Enumerable.Range(1, ct.class_count).Select(number => new CourseClass { Number = (CourseClass.ClassNumberEnum)number }).ToList()
-                    }).ToList()
-                };
+                        Course = newCourse
+                    };
+
+                    newCourse.CourseTypes.Add(newCourseType);
+                }
+
+                for (int i = 0; i < newCourse.CourseTypes.Count; i++)
+                {
+                    var ct = request.course_type[i];
+                    var newCourseType = newCourse.CourseTypes.ElementAt(i);
+
+                    newCourseType.CourseClasses = new List<CourseClass>();
+
+                    for (int j = 1; j <= ct.class_count; j++)
+                    {
+                        var newCourseClass = new CourseClass
+                        {
+                            Number = (CourseClass.ClassNumberEnum)j,
+                            CourseType = newCourseType
+                        };
+
+                        newCourseType.CourseClasses.Add(newCourseClass);
+                    }
+                }
 
                 _context.Courses.Add(newCourse);
                 _context.SaveChanges();
@@ -66,6 +96,10 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public ActionResult<Course> GetCourse(int id)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new { Message = "Login required" });
@@ -95,6 +129,10 @@ namespace WebApi.Controllers
         [HttpGet("class/{id}")]
         public ActionResult<CourseClass> GetCourseClass(int id)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new { Message = "Login required" });
@@ -102,8 +140,8 @@ namespace WebApi.Controllers
             try
             {
                 var courseClass = _context.CourseClasses
-                    .Include(cc => cc.CourseTypes)
-                        .ThenInclude(ct => ct.Courses)
+                    .Include(cc => cc.CourseType)
+                        .ThenInclude(ct => ct.Course)
                     .Include(cc => cc.Schedules)
                     .FirstOrDefault(cc => cc.Id == id);
 
@@ -128,12 +166,12 @@ namespace WebApi.Controllers
             {
                 id = courseClass.Id,
                 number = (int)courseClass.Number,
-                course_id = courseClass.CourseTypes.CourseId,
-                course_name = courseClass.CourseTypes.Courses.Name,
-                course_code = courseClass.CourseTypes.Courses.Code,
+                course_id = courseClass.CourseType.CourseId,
+                course_name = courseClass.CourseType.Course.Name,
+                course_code = courseClass.CourseType.Course.Code,
                 course_type = courseClass.CourseTypeId,
-                course_credit = courseClass.CourseTypes.Credit,
-                schedule = courseClass.Schedules.Select(s => new
+                course_credit = courseClass.CourseType.Credit,
+                schedule = courseClass.Schedules?.Select(s => new
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,

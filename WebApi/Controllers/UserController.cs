@@ -22,6 +22,10 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Admin privileges required" });
@@ -45,6 +49,10 @@ namespace WebApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new { Message = "Login required" });
@@ -72,8 +80,12 @@ namespace WebApi.Controllers
 
         // POST: {{base_url}}/users
         [HttpPost]
-        public async Task<ActionResult<User>> CreateUser([FromBody] UserRequest request)
+        public ActionResult<User> CreateUser([FromBody] UserRequest request)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Admin privileges required" });
@@ -127,6 +139,10 @@ namespace WebApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserUpdateRequest request)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Admin privileges required" });

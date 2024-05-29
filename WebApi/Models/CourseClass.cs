@@ -16,9 +16,9 @@ namespace WebApi.Models
         [Required]
         public ClassNumberEnum Number { get; set; }
 
-        public ICollection<Schedule> Schedules { get; set; }
+        public ICollection<Schedule>? Schedules { get; set; }
 
-        public CourseType CourseTypes { get; set; }
+        public required CourseType CourseType { get; set; }
         public enum ClassNumberEnum
         {
             One = 1,

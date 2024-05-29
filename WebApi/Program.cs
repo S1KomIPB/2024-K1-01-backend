@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApi.Data;
 using WebApi.Models;
-using BCrypt.Net;
-using Azure.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +40,7 @@ builder.Services.AddAuthentication(x =>
     x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
+    var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? throw new Exception("JwtSettings is missing in appsettings.json");
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = false,
@@ -51,7 +49,7 @@ builder.Services.AddAuthentication(x =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // Specify the expected issuer to validate against
         ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
 });
 
@@ -77,10 +75,11 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
     var usersCount = await context.Users.CountAsync();
     if (!adminExists)
     {
+
         var user = new User
         {
             Name = builder.Configuration["Admin:Name"],
-            InitialChar = builder.Configuration["Admin:InitialChar"],
+            InitialChar = builder.Configuration["Admin:InitialChar"] ?? throw new Exception("InitialChar is missing in appsettings.json"),
             IsAdmin = true,
             Password = BCrypt.Net.BCrypt.HashPassword(builder.Configuration["Admin:Password"]),
             Email = "",

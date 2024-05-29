@@ -32,17 +32,17 @@ namespace WebApi.Data
 
             modelBuilder.Entity<Course>()
                 .HasMany(c => c.CourseTypes)
-                .WithOne(ct => ct.Courses)
+                .WithOne(ct => ct.Course)
                 .HasForeignKey(ct => ct.CourseId);
 
             modelBuilder.Entity<CourseType>()
-                .HasOne(ct => ct.Courses)
+                .HasOne(ct => ct.Course)
                 .WithMany(c => c.CourseTypes)
                 .HasForeignKey(ct => ct.CourseId);
 
             modelBuilder.Entity<CourseType>()
                 .HasMany(ct => ct.CourseClasses)
-                .WithOne(cc => cc.CourseTypes)
+                .WithOne(cc => cc.CourseType)
                 .HasForeignKey(cc => cc.CourseTypeId);
 
             modelBuilder.Entity<Semester>()

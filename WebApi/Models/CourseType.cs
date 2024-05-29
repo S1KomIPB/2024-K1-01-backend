@@ -27,8 +27,10 @@ namespace WebApi.Models
         [Range(0, int.MaxValue, ErrorMessage = "Credit must be a non-negative value.")]
         public int Credit { get; set; }
 
-        public Course Courses { get; set; }
+        [Required]
+        public required Course Course { get; set; }
 
-        public List<CourseClass> CourseClasses { get; set; }
+        [Required]
+        public List<CourseClass> CourseClasses { get; set; } = new List<CourseClass>();
     }
 }

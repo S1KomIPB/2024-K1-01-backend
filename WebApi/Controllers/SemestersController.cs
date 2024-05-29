@@ -19,6 +19,10 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Semester>>> Get()
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new { Message = "Login required" });
@@ -43,6 +47,10 @@ namespace WebApi.Controllers
         [Route("{id}")]
         public async Task<ActionResult<Semester>> Get(int id)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new { Message = "Login required" });
@@ -64,7 +72,7 @@ namespace WebApi.Controllers
                     id = course.Id,
                     name = course.Name,
                     code = course.Code,
-                    course_type = course.CourseTypes.Select(ct => new {
+                    course_type = course.CourseTypes?.Select(ct => new {
                         id = ct.Id,
                         type = (int)ct.CourseTypeT,
                         credit = ct.Credit,
@@ -91,6 +99,10 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {
+            if (User.Identity == null)
+            {
+                return Unauthorized(new { Message = "Login required" });
+            }
             if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
             {
                 return Unauthorized(new { Message = "Admin privileges required" });
