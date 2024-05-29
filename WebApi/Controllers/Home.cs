@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 
-public class HomeController : ControllerBase
+namespace WebApi.Controllers
 {
-    // Endpoint GET /ping
-    [HttpGet("/ping")]
-    public IActionResult Ping()
+    public class HomeController : ControllerBase
     {
-        return Ok(new { message = "Server is Running" });
+        // Endpoint GET /ping
+        [HttpGet("/ping")]
+        public IActionResult Ping()
+        {
+            return Ok(new { message = "Server is Running" });
+        }
     }
 }
