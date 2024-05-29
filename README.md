@@ -1,7 +1,4 @@
-## Packages
-
-1. dotnet add package Microsoft.EntityFrameworkCore.SqlServer -v 7.0.0
-2. dotnet add package DotNetEnv
+# WebApi
 
 ## Database
 
@@ -10,8 +7,8 @@
 
 ## Initialisation
 ```bash
-cp secrets.json.example secrets.json
-type ./secrets.json | dotnet user-secrets set --project WebApi
+cp secret.json.example secret.json
+type ./secret.json | dotnet user-secrets set --project WebApi
 dotnet ef database update --project WebApi
 ```
 
