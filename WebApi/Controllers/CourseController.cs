@@ -8,7 +8,7 @@ namespace WebApi.Controllers
 {
     [ApiController]
     [AuthRequired]
-    [Route("courses")]
+    [Route("/[controller]")]
     public class CourseController : ControllerBase
     {
         private readonly DataContext _context;

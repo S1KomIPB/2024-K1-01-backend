@@ -11,7 +11,7 @@ using WebApi.Models;
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("/auth")]
+    [Route("/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly DataContext _context;
