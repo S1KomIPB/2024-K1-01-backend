@@ -70,7 +70,7 @@ namespace WebApi.Controllers
                     return BadRequest(new { Message = "Invalid token." });
                 }
 
-                var userInitial = identity.FindFirst(ClaimTypes.Name)?.Value;
+                var userInitial = HttpContext.User.FindFirstValue("initial");
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
 
                 if (user == null)
@@ -80,7 +80,7 @@ namespace WebApi.Controllers
 
                 if (!BCrypt.Net.BCrypt.Verify(request.old_password, user.Password))
                 {
-                    return Unauthorized(new { Message = "Old password is incorrect." });
+                    return Conflict(new { Message = "Old password is incorrect." });
                 }
 
                 if (request.new_password != request.confirm_new_password)

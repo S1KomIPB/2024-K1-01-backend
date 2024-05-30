@@ -24,7 +24,7 @@ namespace WebApi.Controllers
             try
             {
 
-                var userInitial = User.FindFirst(ClaimTypes.Name)?.Value;
+                var userInitial = User.FindFirstValue("initial");
 
 
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
