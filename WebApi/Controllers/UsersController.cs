@@ -22,6 +22,20 @@ namespace WebApi.Controllers
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             var users =  await _context.Users.ToListAsync();
+            var userBkd = new List<float>();
+            foreach (var user in users)
+            {
+                var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.IsActive && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == user.Id))))
+                .ToListAsync();
+                var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == user.Id)).Sum())).Sum();
+                var bkd = (float)credits/14;
+                userBkd.Add(bkd);
+            }
             return Ok(new
             {
                 Message = "Success",
@@ -31,6 +45,7 @@ namespace WebApi.Controllers
                     initials = u.InitialChar,
                     is_admin = u.IsAdmin,
                     is_active = u.IsActive,
+                    bkd = userBkd[users.IndexOf(u)]
                 })
             });
         }
@@ -46,6 +61,18 @@ namespace WebApi.Controllers
                 return NotFound(new { Message = "user not found" } ) ;
             }
 
+
+            var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.IsActive && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == id))))
+                .ToListAsync();
+            
+
+            var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == id)).Sum())).Sum();
+            var bkd = (float)credits/14;
             return Ok(new
             {
                 Message = "Success",
@@ -55,6 +82,25 @@ namespace WebApi.Controllers
                     initials = user.InitialChar,
                     is_admin = user.IsAdmin,
                     is_active = user.IsActive,
+                    bkd = bkd,
+                    courses = courses.Select(c => new {
+                        id = c.Id,
+                        name = c.Name,
+                        code = c.Code,
+                        course_type = c.CourseTypes.Select(ct => new {
+                            id = ct.Id,
+                            type = (int)ct.CourseTypeT,
+                            credit = ct.Credit,
+                            course_classes = ct.CourseClasses.Select(cc => new {
+                                id = cc.Id,
+                                number = (int)cc.Number,
+                                schedules = cc.Schedules.Where(s => s.UserId == id).Select(s => new {
+                                    id = s.Id,
+                                    meet_number = s.MeetNumber
+                                }).ToList()
+                            }).ToList()
+                        }).ToList()
+                    }).ToList()
                 }
             });
         }

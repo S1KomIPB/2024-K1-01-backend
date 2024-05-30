@@ -25,22 +25,24 @@ namespace WebApi.Models
         public SemesterEnum Semesters { get; set; }
         public List<CourseType> CourseTypes { get; set; } = new List<CourseType>();
 
+        public required Semester Semester { get; set; }
+
         public enum SemesterEnum
         {
-            One = 1,
-            Two,
-            Three,
-            Four,
-            Five,
-            Six,
-            Seven,
-            Eight,
-            Nine,
-            Ten,
-            Eleven,
-            Twelve,
-            Thirteen,
-            Fourteen
+            First = 1,
+            Second = 2,
+            Third = 3,
+            Fourth = 4,
+            Fifth = 5,
+            Sixth = 6,
+            Seventh = 7,
+            Eighth = 8,
+            Ninth = 9,
+            Tenth = 10,
+            Eleventh = 11,
+            Twelfth = 12,
+            Thirteenth = 13,
+            Fourteenth = 14
         }
     }
 }

@@ -26,10 +26,6 @@ namespace WebApi.Data
                 .HasKey(u => u.Id);
 
             modelBuilder.Entity<Course>()
-                .HasIndex(c => c.Code)
-                .IsUnique();
-
-            modelBuilder.Entity<Course>()
                 .HasMany(c => c.CourseTypes)
                 .WithOne(ct => ct.Course)
                 .HasForeignKey(ct => ct.CourseId);

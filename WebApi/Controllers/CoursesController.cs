@@ -28,9 +28,9 @@ namespace WebApi.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                if (_context.Courses.Any(c => c.Code == request.code))
+                if (_context.Courses.Any(c => c.Code == request.code) && _context.Courses.Any(c => c.SemesterId == request.semester_id))
                 {
-                    return Conflict(new { Message = "Course with the same code already exists" });
+                    return Conflict(new { Message = "Course with the same code already exists in the semester", Data = request.code });
                 }
 
                 var semester = await _context.Semesters.FindAsync(request.semester_id);
@@ -45,7 +45,8 @@ namespace WebApi.Controllers
                     Name = request.name,
                     Code = request.code,
                     Semesters = (Course.SemesterEnum)request.semesters,
-                    CourseTypes = new List<CourseType>()
+                    CourseTypes = new List<CourseType>(),
+                    Semester = semester
                 };
 
                 foreach (var ct in request.course_type)

@@ -33,7 +33,8 @@ namespace WebApi.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Date = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -129,12 +130,6 @@ namespace WebApi.Migrations
                 name: "IX_CourseClasses_CourseTypeId",
                 table: "CourseClasses",
                 column: "CourseTypeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Courses_Code",
-                table: "Courses",
-                column: "Code",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CourseTypes_CourseId",
