@@ -1,14 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
-using BCrypt.Net;
 
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("/users")]
+    [Route("/[controller]")]
     public class UsersController : ControllerBase
     {
         private readonly DataContext _context;
@@ -18,15 +17,25 @@ namespace WebApi.Controllers
             _context = context;
         }
 
-        // GET: {{base_url}}/users
         [HttpGet]
+        [AdminRequired]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             var users =  await _context.Users.ToListAsync();
+            var userBkd = new List<float>();
+            foreach (var user in users)
+            {
+                var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.IsActive && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == user.Id))))
+                .ToListAsync();
+                var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == user.Id)).Sum())).Sum();
+                var bkd = (float)credits/14;
+                userBkd.Add(bkd);
+            }
             return Ok(new
             {
                 Message = "Success",
@@ -36,20 +45,15 @@ namespace WebApi.Controllers
                     initials = u.InitialChar,
                     is_admin = u.IsAdmin,
                     is_active = u.IsActive,
+                    bkd = userBkd[users.IndexOf(u)]
                 })
             });
         }
 
-
-        // GET: {{base_url}}/users/5
         [HttpGet("{id}")]
+        [ResourceOwnerRequired]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
-
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
@@ -57,6 +61,18 @@ namespace WebApi.Controllers
                 return NotFound(new { Message = "user not found" } ) ;
             }
 
+
+            var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.IsActive && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == id))))
+                .ToListAsync();
+            
+
+            var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == id)).Sum())).Sum();
+            var bkd = (float)credits/14;
             return Ok(new
             {
                 Message = "Success",
@@ -66,18 +82,33 @@ namespace WebApi.Controllers
                     initials = user.InitialChar,
                     is_admin = user.IsAdmin,
                     is_active = user.IsActive,
+                    bkd = bkd,
+                    courses = courses.Select(c => new {
+                        id = c.Id,
+                        name = c.Name,
+                        code = c.Code,
+                        course_type = c.CourseTypes.Select(ct => new {
+                            id = ct.Id,
+                            type = (int)ct.CourseTypeT,
+                            credit = ct.Credit,
+                            course_classes = ct.CourseClasses.Select(cc => new {
+                                id = cc.Id,
+                                number = (int)cc.Number,
+                                schedules = cc.Schedules.Where(s => s.UserId == id).Select(s => new {
+                                    id = s.Id,
+                                    meet_number = s.MeetNumber
+                                }).ToList()
+                            }).ToList()
+                        }).ToList()
+                    }).ToList()
                 }
             });
         }
 
-        // POST: {{base_url}}/users
         [HttpPost]
-        public async Task<ActionResult<User>> CreateUser([FromBody] UserRequest request)
+        [AdminRequired]
+        public ActionResult<User> CreateUser([FromBody] UserRequest request)
         {
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)
@@ -106,13 +137,13 @@ namespace WebApi.Controllers
                         nameof(GetUser), 
                         new { id = newUser.Id }, 
                         new { Message = "Success", 
-                              Data = new {
-                                  id = newUser.Id,
-                                  name = newUser.Name,
-                                  initials = newUser.InitialChar,
-                                  is_admin = newUser.IsAdmin,
-                                  is_active = newUser.IsActive,
-                              }
+                                Data = new {
+                                    id = newUser.Id,
+                                    name = newUser.Name,
+                                    initials = newUser.InitialChar,
+                                    is_admin = newUser.IsAdmin,
+                                    is_active = newUser.IsActive,
+                                }
                         });
             }
             catch (Exception ex)
@@ -123,14 +154,10 @@ namespace WebApi.Controllers
             }
         }
 
-        // PUT: {{base_url}}/users/5
         [HttpPut("{id}")]
+        [AdminRequired]
         public async Task<IActionResult> UpdateUser(int id, UserUpdateRequest request)
         {
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using WebApi.Models;
 
 namespace WebApi.Data
@@ -27,22 +26,18 @@ namespace WebApi.Data
                 .HasKey(u => u.Id);
 
             modelBuilder.Entity<Course>()
-                .HasIndex(c => c.Code)
-                .IsUnique();
-
-            modelBuilder.Entity<Course>()
                 .HasMany(c => c.CourseTypes)
-                .WithOne(ct => ct.Courses)
+                .WithOne(ct => ct.Course)
                 .HasForeignKey(ct => ct.CourseId);
 
             modelBuilder.Entity<CourseType>()
-                .HasOne(ct => ct.Courses)
+                .HasOne(ct => ct.Course)
                 .WithMany(c => c.CourseTypes)
                 .HasForeignKey(ct => ct.CourseId);
 
             modelBuilder.Entity<CourseType>()
                 .HasMany(ct => ct.CourseClasses)
-                .WithOne(cc => cc.CourseTypes)
+                .WithOne(cc => cc.CourseType)
                 .HasForeignKey(cc => cc.CourseTypeId);
 
             modelBuilder.Entity<Semester>()
@@ -56,7 +51,7 @@ namespace WebApi.Data
             modelBuilder.Entity<Schedule>()
                 .HasOne(s => s.User)
                 .WithMany(u => u.Schedules)
-                .HasForeignKey(s => s.TeacherId)
+                .HasForeignKey(s => s.UserId)
                 .IsRequired(false);
 
             base.OnModelCreating(modelBuilder);

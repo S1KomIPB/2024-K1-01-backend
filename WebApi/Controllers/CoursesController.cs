@@ -1,39 +1,42 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("courses")]
-    public class CourseController : ControllerBase
+    [AuthRequired]
+    [Route("/[controller]")]
+    public class CoursesController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public CourseController(DataContext context)
+        public CoursesController(DataContext context)
         {
             _context = context;
         }
 
         [HttpPost]
-        public ActionResult<Course> CreateCourse([FromBody] CourseRequestModel request)
+        [AdminRequired]
+        public async Task<ActionResult<Course>> CreateCourse([FromBody] CourseRequestModel request)
         {
-            if (!(User.Identity.IsAuthenticated && User.IsInRole("Admin")))
-            {
-                return Unauthorized(new { Message = "Admin privileges required" });
-            }
             try
             {
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
                 }
-                if (_context.Courses.Any(c => c.Code == request.code))
+                if (_context.Courses.Any(c => c.Code == request.code) && _context.Courses.Any(c => c.SemesterId == request.semester_id))
                 {
-                    return Conflict(new { Message = "Course with the same code already exists" });
+                    return Conflict(new { Message = "Course with the same code already exists in the semester", Data = request.code });
+                }
+
+                var semester = await _context.Semesters.FindAsync(request.semester_id);
+                if (semester == null)
+                {
+                    return NotFound(new { Message = "Semester not found", Data = request.semester_id });
                 }
 
                 var newCourse = new Course
@@ -42,18 +45,55 @@ namespace WebApi.Controllers
                     Name = request.name,
                     Code = request.code,
                     Semesters = (Course.SemesterEnum)request.semesters,
-                    CourseTypes = request.course_type.Select(ct => new CourseType
+                    CourseTypes = new List<CourseType>(),
+                    Semester = semester
+                };
+
+                foreach (var ct in request.course_type)
+                {
+                    var newCourseType = new CourseType
                     {
                         CourseTypeT = (CourseType.CourseTypeEnum)ct.type,
                         Credit = ct.credit,
-                        CourseClasses = Enumerable.Range(1, ct.class_count).Select(number => new CourseClass { Number = (CourseClass.ClassNumberEnum)number }).ToList()
-                    }).ToList()
-                };
+                        Course = newCourse
+                    };
 
-                _context.Courses.Add(newCourse);
-                _context.SaveChanges();
+                    newCourse.CourseTypes.Add(newCourseType);
+                }
 
-                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse) });
+                for (int i = 0; i < newCourse.CourseTypes.Count; i++)
+                {
+                    var ct = request.course_type[i];
+                    var newCourseType = newCourse.CourseTypes.ElementAt(i);
+
+                    newCourseType.CourseClasses = new List<CourseClass>();
+
+                    for (int j = 1; j <= ct.class_count; j++)
+                    {
+                        var newCourseClass = new CourseClass
+                        {
+                            Number = (CourseClass.ClassNumberEnum)j,
+                            CourseType = newCourseType
+                        };
+
+                        for (int k = 1; k <= 14; k++)
+                        {
+                            var newSchedule = new Schedule
+                            {
+                                MeetNumber = k,
+                                CourseClass = newCourseClass
+                            };
+                            newCourseClass.Schedules.Add(newSchedule);
+                        }
+
+                        newCourseType.CourseClasses.Add(newCourseClass);
+                    }
+                }
+
+                await _context.Courses.AddAsync(newCourse);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetCourse), new { id = newCourse.Id }, new { Message = "success", Data = MapToResponseModel(newCourse, semester.Date) });
             }
             catch (Exception ex)
             {
@@ -64,25 +104,26 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Course> GetCourse(int id)
+        public async Task<ActionResult<Course>> GetCourse(int id)
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
             try
             {
-                var course = _context.Courses
+                var course = await _context.Courses
                     .Include(c => c.CourseTypes)
                         .ThenInclude(ct => ct.CourseClasses)
-                    .FirstOrDefault(c => c.Id == id);
+                    .FirstOrDefaultAsync(c => c.Id == id);
 
                 if (course == null)
                 {
                     return NotFound(new { Message = "Course not found", Data = id });
                 }
+                var semester = await _context.Semesters.FindAsync(course.SemesterId);
+                if (semester == null)
+                {
+                    return NotFound(new { Message = "Semester not found", Data = course.SemesterId });
+                }
 
-                return Ok(new { Message = "success", Data = MapToResponseModel(course) });
+                return Ok(new { Message = "success", Data = MapToResponseModel(course, semester.Date) });
             }
             catch (Exception ex)
             {
@@ -93,19 +134,15 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("class/{id}")]
-        public ActionResult<CourseClass> GetCourseClass(int id)
+        public async Task<ActionResult<CourseClass>> GetCourseClass(int id)
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new { Message = "Login required" });
-            }
             try
             {
-                var courseClass = _context.CourseClasses
-                    .Include(cc => cc.CourseTypes)
-                        .ThenInclude(ct => ct.Courses)
+                var courseClass = await _context.CourseClasses
+                    .Include(cc => cc.CourseType)
+                        .ThenInclude(ct => ct.Course)
                     .Include(cc => cc.Schedules)
-                    .FirstOrDefault(cc => cc.Id == id);
+                    .FirstOrDefaultAsync(cc => cc.Id == id);
 
                 if (courseClass == null)
                 {
@@ -128,21 +165,21 @@ namespace WebApi.Controllers
             {
                 id = courseClass.Id,
                 number = (int)courseClass.Number,
-                course_id = courseClass.CourseTypes.CourseId,
-                course_name = courseClass.CourseTypes.Courses.Name,
-                course_code = courseClass.CourseTypes.Courses.Code,
+                course_id = courseClass.CourseType.CourseId,
+                course_name = courseClass.CourseType.Course.Name,
+                course_code = courseClass.CourseType.Course.Code,
                 course_type = courseClass.CourseTypeId,
-                course_credit = courseClass.CourseTypes.Credit,
-                schedule = courseClass.Schedules.Select(s => new
+                course_credit = courseClass.CourseType.Credit,
+                schedule = courseClass.Schedules?.Select(s => new
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,
-                    teacher_id = s.TeacherId
+                    teacher_id = s.UserId
                 }).ToList()
             };
         }
 
-        private object MapToResponseModel(Course course)
+        private object MapToResponseModel(Course course, DateTime semesterStart)
         {
             return new
             {
@@ -150,6 +187,7 @@ namespace WebApi.Controllers
                 name = course.Name,
                 code = course.Code,
                 semesters = course.Semesters,
+                semester_start = semesterStart,
                 course_type = course.CourseTypes.Select(ct => new
                 {
                     id = ct.Id,

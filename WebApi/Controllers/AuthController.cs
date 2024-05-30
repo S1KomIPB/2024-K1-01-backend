@@ -1,27 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
+using WebApi.Config;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
-
 
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("/auth")]
+    [Route("/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly DataContext _context;
-        private readonly IConfiguration _configuration;
 
-        public AuthController(IConfiguration configuration, DataContext context)
+        public AuthController(DataContext context)
         {
-            _configuration = configuration;
             _context = context;
         }
 
@@ -62,8 +58,7 @@ namespace WebApi.Controllers
             });
         }
 
-        // PUT: api/Users/5
-        [Authorize]
+        [AuthRequired]
         [HttpPut("password")]
         public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request)
         {
@@ -75,7 +70,7 @@ namespace WebApi.Controllers
                     return BadRequest(new { Message = "Invalid token." });
                 }
 
-                var userInitial = identity.FindFirst(ClaimTypes.Name)?.Value;
+                var userInitial = HttpContext.User.FindFirstValue("initial");
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
 
                 if (user == null)
@@ -85,7 +80,7 @@ namespace WebApi.Controllers
 
                 if (!BCrypt.Net.BCrypt.Verify(request.old_password, user.Password))
                 {
-                    return Unauthorized(new { Message = "Old password is incorrect." });
+                    return Conflict(new { Message = "Old password is incorrect." });
                 }
 
                 if (request.new_password != request.confirm_new_password)
@@ -117,22 +112,104 @@ namespace WebApi.Controllers
             }
         }
 
+        [AdminRequired]
+        [HttpPut("activate/{initial}")]
+        public async Task<IActionResult> ActivateUser(string initial)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == initial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                if (user.IsActive)
+                {
+                    return Conflict(new { Message = "User is already active." });
+                }
+
+                user.IsActive = true;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+        
+        [AdminRequired]
+        [HttpPut("deactivate/{initial}")]
+        public async Task<IActionResult> DeactivateUser(string initial)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == initial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                if (!user.IsActive)
+                {
+                    return Conflict(new { Message = "User is already inactive." });
+                }
+
+                user.IsActive = false;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = user.Id,
+                        name = user.Name,
+                        initials = user.InitialChar,
+                        is_admin = user.IsAdmin,
+                        is_active = user.IsActive,
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+
         private string GenerateJwtToken(User user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var credentials = new SigningCredentials(Secret.JWTSecretKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, user.InitialChar),
-                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+                new Claim("id", user.Id.ToString()),
+                new Claim("initial", user.InitialChar),
+                new Claim("role", user.IsAdmin ? "admin" : "user")
             };
 
             var token = new JwtSecurityToken(
-                _configuration["JwtSettings:Issuer"],
-                _configuration["JwtSettings:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["JwtSettings:ExpirationInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(Secret.JWTExpirationInMinutes)),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -141,13 +218,13 @@ namespace WebApi.Controllers
 
     public class LoginRequest
     {
-        public string initial { get; set; }
-        public string password { get; set; }
+        public required string initial { get; set; }
+        public required string password { get; set; }
     }
     public class ChangePasswordRequest
     {
-        public string old_password { get; set; }
-        public string new_password { get; set; }
-        public string confirm_new_password { get; set;}
+        public required string old_password { get; set; }
+        public required string new_password { get; set; }
+        public required string confirm_new_password { get; set;}
     }
 }

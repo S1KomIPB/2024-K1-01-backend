@@ -1,20 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using WebApi.Config;
 using WebApi.Data;
 using WebApi.Models;
-using BCrypt.Net;
-using Azure.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+Secret.Initialize(builder.Configuration);
 
-//load .env file
-DotNetEnv.Env.Load();
-
-
-//db connection function
 static void CheckDatabaseConnection(IServiceProvider serviceProvider)
 {
     using var scope = serviceProvider.CreateScope();
@@ -33,9 +26,6 @@ static void CheckDatabaseConnection(IServiceProvider serviceProvider)
     }
 }
 
-//connectionString
-var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
-
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -49,24 +39,20 @@ builder.Services.AddAuthentication(x =>
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // Specify the expected issuer to validate against
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))
+        ValidIssuer = Secret.JWTIssuer,
+        ValidAudience = Secret.JWTAudience,
+        IssuerSigningKey = Secret.JWTSecretKey
     };
+    options.MapInboundClaims = false;
 });
 
 builder.Services.AddAuthorization();
-
-// Add services to the container.
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(Secret.ConnectionString));
 
 var app = builder.Build();
 
-//check connection to the db
 CheckDatabaseConnection(app.Services);
 
 async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
@@ -77,12 +63,13 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
     var usersCount = await context.Users.CountAsync();
     if (!adminExists)
     {
+
         var user = new User
         {
-            Name = builder.Configuration["Admin:Name"],
-            InitialChar = builder.Configuration["Admin:InitialChar"],
+            Name = Secret.AdminName,
+            InitialChar = Secret.AdminInitials,
             IsAdmin = true,
-            Password = BCrypt.Net.BCrypt.HashPassword(builder.Configuration["Admin:Password"]),
+            Password = BCrypt.Net.BCrypt.HashPassword(Secret.AdminPassword),
             Email = "",
             IsActive = true
         };
@@ -93,15 +80,6 @@ async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
 }
 
 await InitializeDatabaseAsync(app.Services);
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

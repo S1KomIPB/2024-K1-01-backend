@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebApi.Models
@@ -10,8 +10,7 @@ namespace WebApi.Models
         public int Id { get; set; }
 
         [ForeignKey("User")]
-        [Required]
-        public int? TeacherId { get; set; }
+        public int? UserId { get; set; }
 
         [ForeignKey("CourseClass")]
         [Required]
@@ -20,7 +19,7 @@ namespace WebApi.Models
         [Required]
         public int MeetNumber { get; set; }
 
-        public CourseClass CourseClass { get; set; }
-        public User User { get; set; }
+        public required CourseClass CourseClass { get; set; }
+        public User? User { get; set; }
     }
 }

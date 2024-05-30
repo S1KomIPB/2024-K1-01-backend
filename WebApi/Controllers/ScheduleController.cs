@@ -1,12 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using WebApi.Data;
-using WebApi.Models;
 
 namespace WebApi.Controllers
 {
@@ -22,13 +18,13 @@ namespace WebApi.Controllers
         }
 
         [Authorize]
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateSchedule(int id)
         {
             try
             {
 
-                var userInitial = User.FindFirst(ClaimTypes.Name)?.Value;
+                var userInitial = User.FindFirstValue("initial");
 
 
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
@@ -47,7 +43,7 @@ namespace WebApi.Controllers
                 }
 
 
-                schedule.TeacherId = user.Id;
+                schedule.UserId = user.Id;
 
                 _context.Schedules.Update(schedule);
                 await _context.SaveChangesAsync();
@@ -59,7 +55,7 @@ namespace WebApi.Controllers
                     {
                         id = schedule.Id,
                         meet_number = schedule.MeetNumber,
-                        teacher_id = schedule.TeacherId,
+                        teacher_id = schedule.UserId,
                         course_class_id = schedule.CourseClassId
                     }
                 });
