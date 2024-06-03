@@ -37,13 +37,21 @@ builder.Services.AddAuthentication(x =>
     {
         ValidateIssuer = false,
         ValidateAudience = false,
-        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = Secret.JWTIssuer,
-        ValidAudience = Secret.JWTAudience,
         IssuerSigningKey = Secret.JWTSecretKey
     };
     options.MapInboundClaims = false;
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        name: "allowall",
+        policy  => {
+            policy.AllowAnyOrigin(); // TODO: Change this to a specific origin
+            policy.WithHeaders("Content-Type", "Authorization");
+            policy.AllowAnyMethod();
+        });
 });
 
 builder.Services.AddAuthorization();
@@ -83,7 +91,7 @@ await InitializeDatabaseAsync(app.Services);
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCors("allowall");
 app.MapControllers();
 
 app.Run();

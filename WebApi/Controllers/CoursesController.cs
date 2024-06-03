@@ -103,6 +103,31 @@ namespace WebApi.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<ActionResult<Course>> GetCourse()
+        {
+            try
+            {
+                // get courses that its semester object is active
+                var courses = await _context.Courses
+                    .Where(c => c.Semester.IsActive)
+                    .ToListAsync();
+
+                if (courses == null)
+                {
+                    return NotFound(new { Message = "Courses not found" });
+                }
+
+                return Ok(new { Message = "success", Data = courses });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<Course>> GetCourse(int id)
         {
@@ -142,6 +167,7 @@ namespace WebApi.Controllers
                     .Include(cc => cc.CourseType)
                         .ThenInclude(ct => ct.Course)
                     .Include(cc => cc.Schedules)
+                        .ThenInclude(s => s.User)
                     .FirstOrDefaultAsync(cc => cc.Id == id);
 
                 if (courseClass == null)
@@ -174,7 +200,8 @@ namespace WebApi.Controllers
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,
-                    teacher_id = s.UserId
+                    teacher_id = s.UserId,
+                    teacher_initial = s.User?.InitialChar,
                 }).ToList()
             };
         }

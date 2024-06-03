@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
@@ -20,6 +21,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("/seed")]
+        [AdminRequired]
         public async Task<ActionResult> Seed()
         {
             Random random = new();
@@ -83,7 +85,7 @@ namespace WebApi.Controllers
                 foreach (var courseType in course.CourseTypes)
                 {
                     var courseClassCount = random.Next(1, 5);
-                    for (int i = 1; i < courseClassCount; i++)
+                    for (int i = 1; i <= courseClassCount; i++)
                     {
                         var courseClass = new CourseClass
                         {
@@ -92,11 +94,12 @@ namespace WebApi.Controllers
                         };
 
                         for (int k = 1; k <= 14; k++) {
+                            var isFilled = random.Next(100) < 80;
                             var schedule = new Schedule
                             {
                                 MeetNumber = k,
                                 CourseClass = courseClass,
-                                UserId = random.Next(usersIntial.Count) + 2
+                                UserId = isFilled ? random.Next(usersIntial.Count) + 2 : null
                             };
                             courseClass.Schedules.Add(schedule);
                         }
@@ -140,7 +143,7 @@ namespace WebApi.Controllers
                 foreach (var courseType in course.CourseTypes)
                 {
                     var courseClassCount = random.Next(1, 5);
-                    for (int i = 1; i < courseClassCount; i++)
+                    for (int i = 1; i <= courseClassCount; i++)
                     {
                         var courseClass = new CourseClass
                         {
@@ -149,11 +152,12 @@ namespace WebApi.Controllers
                         };
 
                         for (int k = 1; k <= 14; k++) {
+                            var isFilled = random.Next(100) < 80;
                             var schedule = new Schedule
                             {
                                 MeetNumber = k,
                                 CourseClass = courseClass,
-                                UserId = random.Next(usersIntial.Count) + 2
+                                UserId = isFilled ? random.Next(usersIntial.Count) + 2 : null
                             };
                             courseClass.Schedules.Add(schedule);
                         }

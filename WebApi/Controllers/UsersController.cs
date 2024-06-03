@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
@@ -50,7 +51,68 @@ namespace WebApi.Controllers
             });
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("me")]
+        [AuthRequired]
+        public async Task<ActionResult<User>> GetUser()
+        {
+            var id = HttpContext.User.FindFirstValue("id");
+            if (id == null)
+            {
+                return NotFound(new { Message = "user not found" } ) ;
+            }
+            var intId = int.Parse(id);
+            var user = await _context.Users.FindAsync(intId);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "user not found" } ) ;
+            }
+
+
+            var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.IsActive && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == intId))))
+                .ToListAsync();
+            
+
+            var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == intId)).Sum())).Sum();
+            var bkd = (float)credits/14;
+            return Ok(new
+            {
+                Message = "Success",
+                Data = new {
+                    id = user.Id,
+                    name = user.Name,
+                    initials = user.InitialChar,
+                    is_admin = user.IsAdmin,
+                    is_active = user.IsActive,
+                    bkd = bkd,
+                    courses = courses.Select(c => new {
+                        id = c.Id,
+                        name = c.Name,
+                        code = c.Code,
+                        course_type = c.CourseTypes.Select(ct => new {
+                            id = ct.Id,
+                            type = (int)ct.CourseTypeT,
+                            credit = ct.Credit,
+                            course_classes = ct.CourseClasses.Select(cc => new {
+                                id = cc.Id,
+                                number = (int)cc.Number,
+                                schedules = cc.Schedules.Where(s => s.UserId == intId).Select(s => new {
+                                    id = s.Id,
+                                    meet_number = s.MeetNumber
+                                }).ToList()
+                            }).ToList()
+                        }).ToList()
+                    }).ToList()
+                }
+            });
+        }
+
+        [HttpGet("{id:int}")]
         [ResourceOwnerRequired]
         public async Task<ActionResult<User>> GetUser(int id)
         {
