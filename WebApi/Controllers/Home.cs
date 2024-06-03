@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
@@ -20,6 +21,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("/seed")]
+        [AdminRequired]
         public async Task<ActionResult> Seed()
         {
             Random random = new();
