@@ -5,8 +5,6 @@ namespace WebApi.Config
 {
     public static  class Secret
     {
-        public static string JWTIssuer { get; private set; } = string.Empty;
-        public static string JWTAudience { get; private set; } = string.Empty;
         public static SymmetricSecurityKey JWTSecretKey { get; private set; } = new SymmetricSecurityKey(new byte[1]);
         public static int JWTExpirationInMinutes { get; private set; }
         public static string AdminName { get; private set; } = string.Empty;
@@ -26,8 +24,6 @@ namespace WebApi.Config
 
         public static void Initialize(IConfiguration configuration)
         {
-            JWTIssuer = GetRequiredSetting(configuration, "Secret:JWTIssuer");
-            JWTAudience = GetRequiredSetting(configuration, "Secret:JWTAudience");
             JWTSecretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(GetRequiredSetting(configuration, "Secret:JWTSecretKey")));
             JWTExpirationInMinutes = int.Parse(GetRequiredSetting(configuration, "Secret:JWTExpirationInMinutes"));
             AdminName = GetRequiredSetting(configuration, "Secret:AdminName");

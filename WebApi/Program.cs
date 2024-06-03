@@ -37,10 +37,7 @@ builder.Services.AddAuthentication(x =>
     {
         ValidateIssuer = false,
         ValidateAudience = false,
-        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = Secret.JWTIssuer,
-        ValidAudience = Secret.JWTAudience,
         IssuerSigningKey = Secret.JWTSecretKey
     };
     options.MapInboundClaims = false;
