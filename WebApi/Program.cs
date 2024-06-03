@@ -43,6 +43,17 @@ builder.Services.AddAuthentication(x =>
     options.MapInboundClaims = false;
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        name: "allowall",
+        policy  => {
+            policy.AllowAnyOrigin(); // TODO: Change this to a specific origin
+            policy.WithHeaders("Content-Type", "Authorization");
+            policy.AllowAnyMethod();
+        });
+});
+
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -80,7 +91,7 @@ await InitializeDatabaseAsync(app.Services);
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCors("allowall");
 app.MapControllers();
 
 app.Run();
