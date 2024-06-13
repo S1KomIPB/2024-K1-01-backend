@@ -1,12 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApi.Data;
-using WebApi.Models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("schedule")]
+    [Route("/schedules")]
     public class ScheduleController : ControllerBase
     {
         private readonly DataContext _context;
@@ -16,92 +17,54 @@ namespace WebApi.Controllers
             _context = context;
         }
 
-        // GET: schedule
-        [HttpGet]
-        public async Task<IActionResult> GetAllSchedules()
-        {
-            var schedules = await _context.Schedule.ToListAsync();
-            return Ok(schedules);
-        }
-
-        // GET: schedule/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetScheduleById(int id)
-        {
-            var schedule = await _context.Schedule.FindAsync(id);
-
-            if (schedule == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(schedule);
-        }
-
-        // POST: schedule
-        [HttpPost]
-        public async Task<IActionResult> CreateSchedule(Schedule schedule)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.Schedule.Add(schedule);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetScheduleById), new { id = schedule.Id }, schedule);
-        }
-
-        // PUT: schedule/{id}
+        [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSchedule(int id, Schedule schedule)
+        public async Task<IActionResult> UpdateSchedule(int id)
         {
-            if (id != schedule.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(schedule).State = EntityState.Modified;
-
             try
             {
+
+                var userInitial = User.FindFirstValue("initial");
+
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.InitialChar == userInitial);
+
+                if (user == null)
+                {
+                    return NotFound(new { Message = "User not found." });
+                }
+
+ 
+                var schedule = await _context.Schedules.FindAsync(id);
+
+                if (schedule == null)
+                {
+                    return NotFound(new { Message = "Schedule not found." });
+                }
+
+
+                schedule.UserId = user.Id;
+
+                _context.Schedules.Update(schedule);
                 await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ScheduleExists(id))
+
+                return Ok(new
                 {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                    Message = "Success",
+                    Data = new
+                    {
+                        id = schedule.Id,
+                        meet_number = schedule.MeetNumber,
+                        teacher_id = schedule.UserId,
+                        course_class_id = schedule.CourseClassId
+                    }
+                });
             }
-
-            return NoContent();
-        }
-
-        // DELETE: schedule/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSchedule(int id)
-        {
-            var schedule = await _context.Schedule.FindAsync(id);
-            if (schedule == null)
+            catch (Exception ex)
             {
-                return NotFound();
+                Console.WriteLine($"Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
             }
-
-            _context.Schedule.Remove(schedule);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool ScheduleExists(int id)
-        {
-            return _context.Schedule.Any(e => e.Id == id);
         }
     }
 }

@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebApi.Middleware;
 using WebApi.Models;
 
 namespace WebApi.Controllers
 {
     [ApiController]
     [Route("/[controller]")]
+    [AuthRequired]
     public class SemestersController : ControllerBase
     {
         private readonly DataContext _context;
@@ -37,7 +39,8 @@ namespace WebApi.Controllers
         [Route("{id}")]
         public async Task<ActionResult<Semester>> Get(int id)
         {
-            try{
+            try
+            {
                 var semester = await _context.Semesters.FindAsync(id);
 
                 if (semester == null)
@@ -53,7 +56,7 @@ namespace WebApi.Controllers
                     id = course.Id,
                     name = course.Name,
                     code = course.Code,
-                    course_type = course.CourseTypes.Select(ct => new {
+                    course_type = course.CourseTypes?.Select(ct => new {
                         id = ct.Id,
                         type = (int)ct.CourseTypeT,
                         credit = ct.Credit,
@@ -78,9 +81,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
+        [AdminRequired]
         public async Task<ActionResult<List<Semester>>> Add(SemesterRequest request)
         {
-            try{
+            try
+            {
                 var semester = new Semester
                 {
                     Date = request.Date
