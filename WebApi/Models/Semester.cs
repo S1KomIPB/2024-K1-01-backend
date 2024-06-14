@@ -15,5 +15,8 @@ namespace WebApi.Models
 
         [Required]
         public bool IsActive { get; set; } = false;
+
+        public List<Course> Courses { get; set; } = new List<Course>();
+
     }
 }

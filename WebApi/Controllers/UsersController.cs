@@ -167,6 +167,89 @@ namespace WebApi.Controllers
             });
         }
 
+        [HttpGet("{id:int}/semesters")]
+        [ResourceOwnerRequired]
+        public async Task<ActionResult<User>> GetUserSemesters(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "user not found" } ) ;
+            }
+
+            var semesters = await _context.Semesters
+                .Where(s => s.Courses.Any(c => c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(sch => sch.UserId == id)))))
+                .Select(s => new {
+                    Id = s.Id,
+                    Date = s.Date,
+                    IsActive = s.IsActive,
+                    Courses = s.Courses.Select(c => new {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Code = c.Code,
+                        CourseTypes = c.CourseTypes.Select(ct => new {
+                            Id = ct.Id,
+                            Type = ct.CourseTypeT,
+                            Credit = ct.Credit,
+                            CourseClasses = ct.CourseClasses.Select(cc => new {
+                                Id = cc.Id,
+                                Number = cc.Number,
+                                Schedules = cc.Schedules.Where(sch => sch.UserId == id).Select(sch => new {
+                                    Id = sch.Id,
+                                    MeetNumber = sch.MeetNumber,
+                                    UserId = sch.UserId
+                                })
+                            })
+                        })
+                    })
+                }).ToListAsync();
+            
+            
+            
+            var bkd = new List<float>();
+            for (int i = 0; i < semesters.Count; i++)
+            {
+                var credits = semesters[i].Courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == id)).Sum())).Sum();
+                bkd.Add((float)credits/14);
+            }
+            return Ok(new
+            {
+                Message = "Success",
+                Data = new {
+                    id = user.Id,
+                    name = user.Name,
+                    initials = user.InitialChar,
+                    is_admin = user.IsAdmin,
+                    is_active = user.IsActive,
+                    semesters = semesters.Select((s, i) => new {
+                        id = s.Id,
+                        date = s.Date,
+                        is_active = s.IsActive,
+                        bkd = bkd[i],
+                        courses = s.Courses.Select(c => new {
+                            id = c.Id,
+                            name = c.Name,
+                            code = c.Code,
+                            course_type = c.CourseTypes.Select(ct => new {
+                                id = ct.Id,
+                                type = (int)ct.Type,
+                                credit = ct.Credit,
+                                course_classes = ct.CourseClasses.Select(cc => new {
+                                    id = cc.Id,
+                                    number = (int)cc.Number,
+                                    schedules = cc.Schedules.Where(s => s.UserId == id).Select(s => new {
+                                        id = s.Id,
+                                        meet_number = s.MeetNumber
+                                    }).ToList()
+                                }).ToList()
+                            }).ToList()
+                        }).ToList()
+                    }).ToList()
+                }
+            });
+        }
+
         [HttpPost]
         [AdminRequired]
         public ActionResult<User> CreateUser([FromBody] UserRequest request)
