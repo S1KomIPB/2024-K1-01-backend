@@ -30,7 +30,8 @@ namespace WebApi.Controllers
                 Message = "Success", 
                 Data = semesters.Select(s => new {
                     id = s.Id,
-                    date = s.Date.ToString("yyyy-MM-dd")
+                    date = s.Date.ToString("yyyy-MM-dd"),
+                    is_active = s.IsActive
                 }) 
             });
         }
@@ -70,6 +71,7 @@ namespace WebApi.Controllers
                     {
                         id = semester.Id,
                         date = semester.Date.ToString("yyyy-MM-dd"),
+                        is_active = semester.IsActive,
                         courses = coursesResponse
                     }
                 };
@@ -99,6 +101,32 @@ namespace WebApi.Controllers
                 return StatusCode(500, new {Message = "Internal server error", Data = e.Message});
             }
         }
+
+
+        [HttpPut]
+        [AdminRequired]
+        [Route("{id}/activate")]
+        public async Task<ActionResult<Semester>> Activate(int id)
+        {
+            try
+            {
+                var semester = await _context.Semesters.FindAsync(id);
+
+                if (semester == null)
+                    return NotFound(new { Message = "Semester not found", Data = id });
+                var activeSemester = await _context.Semesters.FirstOrDefaultAsync(s => s.IsActive == true);
+                if (activeSemester != null)
+                    activeSemester.IsActive = false;
+                semester.IsActive = true;
+                
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Message = "Success", Data = semester });
+            }catch(Exception e){
+                return StatusCode(500, new {Message = "Internal server error", Data = e.Message});
+            }
+        }
+        
 
         [HttpDelete]
         [Route("{id}")]
@@ -151,6 +179,7 @@ namespace WebApi.Controllers
                 }
             }
         }
+
     }
 
      public class SemesterRequest
