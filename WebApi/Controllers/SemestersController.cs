@@ -99,9 +99,61 @@ namespace WebApi.Controllers
                 return StatusCode(500, new {Message = "Internal server error", Data = e.Message});
             }
         }
+
+        [HttpDelete]
+        [Route("{id}")]
+        [AdminRequired]
+        public async Task<IActionResult> Delete(int id)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var semester = await _context.Semesters.FindAsync(id);
+                    if (semester == null)
+                    {
+                        return NotFound(new { message = "Semester not found" });
+                    }
+
+                    // Retrieve and delete related Courses
+                    var courses = await _context.Courses.Where(c => c.SemesterId == id).ToListAsync();
+                    foreach (var course in courses)
+                    {
+                        // Retrieve and delete related CourseTypes
+                        var courseTypes = await _context.CourseTypes.Where(ct => ct.CourseId == course.Id).ToListAsync();
+                        foreach (var courseType in courseTypes)
+                        {
+                            // Retrieve and delete related CourseClasses
+                            var courseClasses = await _context.CourseClasses.Where(cc => cc.CourseTypeId == courseType.Id).ToListAsync();
+                            _context.CourseClasses.RemoveRange(courseClasses);
+
+                            // Retrieve and delete related Schedules
+                            var schedules = await _context.Schedules.Where(s => s.CourseClassId == courseType.Id).ToListAsync();
+                            _context.Schedules.RemoveRange(schedules);
+                        }
+                        _context.CourseTypes.RemoveRange(courseTypes);
+                    }
+                    _context.Courses.RemoveRange(courses);
+
+                    // Finally, delete the Semester
+                    _context.Semesters.Remove(semester);
+
+                    // Save changes and commit the transaction
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "Semester and related data deleted successfully" });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, new { message = "An error occurred while deleting the semester", error = ex.Message });
+                }
+            }
+        }
     }
 
-    public class SemesterRequest
+     public class SemesterRequest
     {
         public DateTime Date { get; set; }
     }
