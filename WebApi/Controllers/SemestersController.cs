@@ -143,6 +143,11 @@ namespace WebApi.Controllers
                         return NotFound(new { message = "Semester not found" });
                     }
 
+                    if (semester.IsActive)
+                    {
+                        return BadRequest(new { message = "Cannot delete an active semester" });
+                    }
+
                     // Retrieve and delete related Courses
                     var courses = await _context.Courses.Where(c => c.SemesterId == id).ToListAsync();
                     foreach (var course in courses)
