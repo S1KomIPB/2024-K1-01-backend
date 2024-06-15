@@ -158,6 +158,112 @@ namespace WebApi.Controllers
             }
         }
 
+        [HttpDelete]
+        [Route("{id}")]
+        [AdminRequired]
+        /* public async Task<IActionResult> Delete(int id)
+        {
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var semester = await _context.Semesters.FindAsync(id);
+                    if (semester == null)
+                    {
+                        return NotFound(new { message = "Semester not found" });
+                    }
+
+                    if (semester.IsActive)
+                    {
+                        return BadRequest(new { message = "Cannot delete an active semester" });
+                    }
+
+                    // Retrieve and delete related Courses
+                    var courses = await _context.Courses.Where(c => c.SemesterId == id).ToListAsync();
+                    foreach (var course in courses)
+                    {
+                        // Retrieve and delete related CourseTypes
+                        var courseTypes = await _context.CourseTypes.Where(ct => ct.CourseId == course.Id).ToListAsync();
+                        foreach (var courseType in courseTypes)
+                        {
+                            // Retrieve and delete related CourseClasses
+                            var courseClasses = await _context.CourseClasses.Where(cc => cc.CourseTypeId == courseType.Id).ToListAsync();
+                            _context.CourseClasses.RemoveRange(courseClasses);
+
+                            // Retrieve and delete related Schedules
+                            var schedules = await _context.Schedules.Where(s => s.CourseClassId == courseType.Id).ToListAsync();
+                            _context.Schedules.RemoveRange(schedules);
+                        }
+                        _context.CourseTypes.RemoveRange(courseTypes);
+                    }
+                    _context.Courses.RemoveRange(courses);
+
+                    // Finally, delete the Semester
+                    _context.Semesters.Remove(semester);
+
+                    // Save changes and commit the transaction
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "Semester and related data deleted successfully" });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, new { message = "An error occurred while deleting the semester", error = ex.Message });
+                }
+            }
+        } */
+        public async Task<ActionResult<Course>> DeleteCourse(int id)
+        {
+            try
+            {
+                var course = await _context.Courses
+                    .Include(c => c.CourseTypes)
+                        .ThenInclude(ct => ct.CourseClasses)
+                            .ThenInclude(cc => cc.Schedules)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (course == null)
+                {
+                    return NotFound(new { Message = "Course not found", Data = id });
+                }
+
+                using (var transaction = await _context.Database.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        foreach (var courseType in course.CourseTypes)
+                        {
+                            foreach (var courseClass in courseType.CourseClasses)
+                            {
+                                _context.Schedules.RemoveRange(courseClass.Schedules);
+                            }
+                            _context.CourseClasses.RemoveRange(courseType.CourseClasses);
+                        }
+                        _context.CourseTypes.RemoveRange(course.CourseTypes);
+                        _context.Courses.Remove(course);
+
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { Message = "Course deleted successfully", Data = id });
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        return StatusCode(500, new { Message = "An error occurred while deleting the course", Data = ex.Message });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+
+                return StatusCode(500, new { Message = "Internal Server Error", Data = ex.Message });
+            }
+        }
+
         [HttpGet("class/{id}")]
         public async Task<ActionResult<CourseClass>> GetCourseClass(int id)
         {
