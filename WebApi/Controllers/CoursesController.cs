@@ -302,7 +302,7 @@ namespace WebApi.Controllers
                 course_code = courseClass.CourseType.Course.Code,
                 course_type = courseClass.CourseTypeId,
                 course_credit = courseClass.CourseType.Credit,
-                schedule = courseClass.Schedules?.Select(s => new
+                schedules = courseClass.Schedules?.Select(s => new
                 {
                     id = s.Id,
                     meet_number = s.MeetNumber,
