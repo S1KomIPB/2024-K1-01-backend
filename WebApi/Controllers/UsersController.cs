@@ -51,6 +51,39 @@ namespace WebApi.Controllers
             });
         }
 
+        [HttpGet("semesters/{id:int}")]
+        [AuthRequired]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsersBySemester(int id)
+        {
+            var users =  await _context.Users.ToListAsync();
+            var userBkd = new List<float>();
+            foreach (var user in users)
+            {
+                var courses = await _context.Courses
+                .Include(c => c.CourseTypes)
+                    .ThenInclude(ct => ct.CourseClasses)
+                        .ThenInclude(cc => cc.Schedules)
+                .Include(c => c.Semester)
+                .Where(c => c.Semester.Id == id && c.CourseTypes.Any(ct => ct.CourseClasses.Any(cc => cc.Schedules.Any(s => s.UserId == user.Id))))
+                .ToListAsync();
+                var credits = courses.SelectMany(c => c.CourseTypes.Select(ct => ct.Credit * ct.CourseClasses.Select(cc => cc.Schedules.Count(s => s.UserId == user.Id)).Sum())).Sum();
+                var bkd = (float)credits/14;
+                userBkd.Add(bkd);
+            }
+            return Ok(new
+            {
+                Message = "Success",
+                Data = users.Select(u => new {
+                    id = u.Id,
+                    name = u.Name,
+                    initials = u.InitialChar,
+                    is_admin = u.IsAdmin,
+                    is_active = u.IsActive,
+                    bkd = userBkd[users.IndexOf(u)]
+                })
+            });
+        }
+
         [HttpGet("me")]
         [AuthRequired]
         public async Task<ActionResult<User>> GetUser()
